@@ -3,7 +3,7 @@ A VR and AR project using Unity for the class Virtual Reality
 
 ## Authors
 
-> Group 8
+> Group 7 (moodle)
 
 | Francisco Dourado | Luís Fonseca | Guilherme Gomes |
 | :---: |:---:| :---:|
