@@ -106557,6 +106557,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1015284213}
   - component: {fileID: 1015284214}
+  - component: {fileID: 1015284215}
   m_Layer: 0
   m_Name: PT_004
   m_TagString: Untagged
@@ -106675,6 +106676,20 @@ SkinnedMeshRenderer:
     m_Center: {x: 0.278924, y: -0.5309553, z: 0.000003516674}
     m_Extent: {x: 1.7859495, y: 1.4056845, z: 1.7804494}
   m_DirtyAABB: 0
+--- !u!64 &1015284215
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1015284212}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Convex: 1
+  m_InflateMesh: 0
+  m_SkinWidth: 0.01
+  m_Mesh: {fileID: 4300000, guid: 72b0235d9f2894a4db6d716058c3ea21, type: 3}
 --- !u!1 &1028005021
 GameObject:
   m_ObjectHideFlags: 0
