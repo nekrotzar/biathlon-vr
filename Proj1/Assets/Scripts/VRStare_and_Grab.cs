@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class VRStare_and_Grab : MonoBehaviour {
 
-    public float stare_time = 0f; // timer 
+    public float wait_time = 3.0f;
+
     public Transform VRHand;
     public Rigidbody TargetObject;
 
-	// Use this for initialization
-	void Start () {
+    private float stare_time = 0f; // timer 
+
+    // Use this for initialization
+    void Start () {
 		
 	}
 	
@@ -17,7 +20,7 @@ public class VRStare_and_Grab : MonoBehaviour {
 	void Update () {
         stare_time = stare_time + Time.deltaTime;
 
-        if (stare_time >= 3f) // once a certain amount of time has passed, the object will be 'grabbed'
+        if (stare_time >= wait_time) // once a certain amount of time has passed, the object will be 'grabbed'
         {
             GrabObject();
         }
