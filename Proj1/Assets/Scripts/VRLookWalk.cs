@@ -13,6 +13,8 @@ public class VRLookWalk : MonoBehaviour
 
     public bool moveforward;
 
+    public bool movebackward;
+
     private CharacterController cc;
 
     // Use this for initialization
@@ -24,19 +26,34 @@ public class VRLookWalk : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (vrCamera.eulerAngles.x >= toggleAngle && vrCamera.eulerAngles.x < 90.0f)
+        float angle = vrCamera.localEulerAngles.x;
+        // Convert angle to negative values
+        angle = (angle > 180) ? angle - 360 : angle;
+
+        Debug.Log(angle);
+
+        if (angle >= toggleAngle && angle < 90.0f)
         {
             moveforward = true;
         }
-        else
+        else if (angle <= -toggleAngle && angle > -90.0f)
         {
-            moveforward = false;
+            movebackward = true;
         }
+        else {
+            moveforward = false;
+            movebackward = false;
+        }
+
         if (moveforward == true)
         {
             Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
-
             cc.SimpleMove(forward * speed);
+        } 
+        else if (movebackward == true)
+        {
+            Vector3 backward = vrCamera.TransformDirection(Vector3.back);
+            cc.SimpleMove(backward * speed);
         }
     }
 }
