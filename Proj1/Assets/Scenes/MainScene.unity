@@ -17021,30 +17021,13 @@ GameObject:
   m_Component:
   - component: {fileID: 139289671}
   - component: {fileID: 139289670}
-  - component: {fileID: 139289669}
-  - component: {fileID: 139289673}
-  - component: {fileID: 139289672}
   m_Layer: 0
   m_Name: WarFireDragon
-  m_TagString: Untagged
+  m_TagString: Dragon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &139289669
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 139289668}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Convex: 1
-  m_InflateMesh: 0
-  m_SkinWidth: 0.5
-  m_Mesh: {fileID: 0}
 --- !u!95 &139289670
 Animator:
   serializedVersion: 3
@@ -17077,31 +17060,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &139289672
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 139289668}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4ef40205b7b43ec419b1b35f4554dedf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isAlive: 0
-  anim: {fileID: 139289670}
---- !u!65 &139289673
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 139289668}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1.675576, y: 2.7030668, z: 3.1459742}
-  m_Center: {x: -0.075886965, y: 0.8515334, z: -0.82516575}
 --- !u!1 &158512723
 GameObject:
   m_ObjectHideFlags: 0
@@ -23986,7 +23944,7 @@ GameObject:
   - component: {fileID: 226275601}
   m_Layer: 0
   m_Name: Bip001 Pelvis
-  m_TagString: Untagged
+  m_TagString: Dragon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -58002,7 +57960,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 466592521}
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0.93, y: 6.01, z: 3.511}
+  m_LocalPosition: {x: 0.93, y: 1.286, z: 3.511}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 524787057}
@@ -58085,7 +58043,7 @@ GameObject:
   - component: {fileID: 514741768}
   m_Layer: 0
   m_Name: Bip001
-  m_TagString: Untagged
+  m_TagString: Dragon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -85670,7 +85628,7 @@ GameObject:
   - component: {fileID: 871658209}
   m_Layer: 0
   m_Name: Bip001 Footsteps
-  m_TagString: Untagged
+  m_TagString: Dragon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -106560,7 +106518,7 @@ GameObject:
   - component: {fileID: 1015284215}
   m_Layer: 0
   m_Name: PT_004
-  m_TagString: Untagged
+  m_TagString: Dragon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -124097,6 +124055,7 @@ GameObject:
   - component: {fileID: 1395762065}
   - component: {fileID: 1395762064}
   - component: {fileID: 1395762063}
+  - component: {fileID: 1395762070}
   m_Layer: 2
   m_Name: TargetSpear
   m_TagString: Untagged
@@ -124250,12 +124209,23 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1395762062}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.703, y: 1.188, z: 3.704}
+  m_LocalPosition: {x: 3.292, y: 2.29, z: 3.35}
   m_LocalScale: {x: 0.05, y: 1, z: 0.05}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1395762070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1395762062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ef40205b7b43ec419b1b35f4554dedf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1404004961
 GameObject:
   m_ObjectHideFlags: 0
