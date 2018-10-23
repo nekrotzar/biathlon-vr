@@ -30,7 +30,6 @@ public class VRLookWalk : MonoBehaviour
         // Convert angle to negative values
         angle = (angle > 180) ? angle - 360 : angle;
 
-        Debug.Log(angle);
 
         if (angle >= toggleAngle && angle < 90.0f)
         {
