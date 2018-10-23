@@ -9,6 +9,8 @@ public class MiniMapCamRot : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        this.transform.LookAt(mainCamera.transform);
+
+        this.transform.eulerAngles = new Vector3(this.transform.eulerAngles.x, mainCamera.transform.eulerAngles.y, this.transform.eulerAngles.z);
+        //this.transform.LookAt(mainCamera.transform);
     }
 }
