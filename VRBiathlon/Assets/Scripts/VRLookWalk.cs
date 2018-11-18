@@ -1,27 +1,32 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GoogleVR;
 
 public class VRLookWalk : MonoBehaviour
 {
 
     public Transform vrCamera;
-
     public float toggleAngle = 45.0f;
-
     public float speed = 3.0f;
-
     public bool moveforward;
-
     public bool movebackward;
-
     private CharacterController cc;
+    private Rigidbody _rgbd;
+    public GvrReticlePointer pointer;
 
     // Use this for initialization
     void Start()
     {
         cc = GetComponent<CharacterController>();
+        _rgbd = GetComponent<Rigidbody>();
+        
     }
+
+       // _rgbd.AddForce(transform.forward * 10, ForceMode.VelocityChange);
+
+
+
 
     // Update is called once per frame
     void Update()
@@ -44,10 +49,11 @@ public class VRLookWalk : MonoBehaviour
             movebackward = false;
         }
 
-        if (moveforward == true)
+        if (moveforward == true && Input.GetMouseButtonDown(0))
         {
-            Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
-            cc.SimpleMove(forward * speed);
+            //Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
+            //cc.SimpleMove(forward * speed);
+            _rgbd.AddForce(transform.forward * 10, ForceMode.Impulse);
         } 
         else if (movebackward == true)
         {
