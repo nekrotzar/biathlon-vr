@@ -1,40 +1,32 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using GoogleVR;
 
 public class VRLookWalk : MonoBehaviour
 {
 
     public Transform vrCamera;
     public float toggleAngle = 45.0f;
-    public float speed = 3.0f;
     public bool moveforward;
     public bool movebackward;
-    private CharacterController cc;
     private Rigidbody _rgbd;
-    public GvrReticlePointer pointer;
+    private float _nextPush;
+    public float pushRate;
+    public float pushForce;
 
     // Use this for initialization
     void Start()
     {
-        cc = GetComponent<CharacterController>();
         _rgbd = GetComponent<Rigidbody>();
-        
     }
-
-       // _rgbd.AddForce(transform.forward * 10, ForceMode.VelocityChange);
-
-
-
 
     // Update is called once per frame
     void Update()
     {
+
         float angle = vrCamera.localEulerAngles.x;
         // Convert angle to negative values
         angle = (angle > 180) ? angle - 360 : angle;
-
 
         if (angle >= toggleAngle && angle < 90.0f)
         {
@@ -44,21 +36,23 @@ public class VRLookWalk : MonoBehaviour
         {
             movebackward = true;
         }
-        else {
+        else
+        {
             moveforward = false;
             movebackward = false;
         }
 
-        if (moveforward == true && Input.GetMouseButtonDown(0))
+        if (moveforward == true && Input.GetMouseButtonDown(0) && Time.time > _nextPush)
         {
-            //Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
-            //cc.SimpleMove(forward * speed);
-            _rgbd.AddForce(transform.forward * 10, ForceMode.Impulse);
-        } 
-        else if (movebackward == true)
+            _nextPush = Time.time + pushRate;
+            Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
+            _rgbd.AddForce(forward * pushForce, ForceMode.Impulse);
+        }
+        else if (movebackward == true && Input.GetMouseButtonDown(0) && Time.time > _nextPush)
         {
+            _nextPush = Time.time + pushRate;
             Vector3 backward = vrCamera.TransformDirection(Vector3.back);
-            cc.SimpleMove(backward * speed);
+            _rgbd.AddForce(backward * pushForce, ForceMode.Impulse);
         }
     }
 }
