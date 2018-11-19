@@ -42,13 +42,13 @@ public class VRLookWalk : MonoBehaviour
             movebackward = false;
         }
 
-        if (moveforward == true && Input.GetMouseButtonDown(0) && Time.time > _nextPush)
+        if (moveforward == true && Input.GetButtonDown("Fire1") && Time.time > _nextPush)
         {
             _nextPush = Time.time + pushRate;
             Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
             _rgbd.AddForce(forward * pushForce, ForceMode.Impulse);
         }
-        else if (movebackward == true && Input.GetMouseButtonDown(0) && Time.time > _nextPush)
+        else if (movebackward == true && Input.GetButtonDown("Fire1") && Time.time > _nextPush)
         {
             _nextPush = Time.time + pushRate;
             Vector3 backward = vrCamera.TransformDirection(Vector3.back);
