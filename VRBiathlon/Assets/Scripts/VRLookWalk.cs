@@ -13,10 +13,18 @@ public class VRLookWalk : MonoBehaviour
     private float _nextPush;
     public float pushRate;
     public float pushForce;
+    public AudioClip WindSound;
+    public AudioSource WindSource;
+    public AudioClip SkiingSound;
+    public AudioSource SkiingSource;
 
     // Use this for initialization
     void Start()
     {
+        WindSource.clip = WindSound;
+        SkiingSource.clip = SkiingSound;
+        WindSource.Play();
+        WindSource.loop = true;
         _rgbd = GetComponent<Rigidbody>();
     }
 
@@ -35,24 +43,33 @@ public class VRLookWalk : MonoBehaviour
         else if (angle <= -toggleAngle && angle > -90.0f)
         {
             movebackward = true;
+            SkiingSource.Stop();
         }
         else
         {
             moveforward = false;
             movebackward = false;
+            SkiingSource.Stop();
         }
 
-        if (moveforward == true && Input.GetButtonDown("Fire1") && Time.time > _nextPush)
+        if (/*moveforward == true &&*/ Input.GetButtonDown("Fire1") && Time.time > _nextPush)
         {
+            SkiingSource.Play();
+            
             _nextPush = Time.time + pushRate;
             Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
             _rgbd.AddForce(forward * pushForce, ForceMode.Impulse);
         }
+        else if (Time.time > _nextPush)
+            SkiingSource.Stop();
+        /*
         else if (movebackward == true && Input.GetButtonDown("Fire1") && Time.time > _nextPush)
         {
             _nextPush = Time.time + pushRate;
             Vector3 backward = vrCamera.TransformDirection(Vector3.back);
             _rgbd.AddForce(backward * pushForce, ForceMode.Impulse);
         }
+        */
+
     }
 }

@@ -4,12 +4,22 @@ public class VR_Shoot : MonoBehaviour {
 
     public float range = 100f;
     public Camera mainCamera;
-	
-	// Update is called once per frame
-	void Update () {
-		
-        if(Input.GetMouseButtonDown(0))
+    public AudioClip SoundClip;
+    public AudioSource SoundSource;
+    private float _nextShot;
+    public float shotRate;
+
+    void Start()
+    {
+        SoundSource.clip = SoundClip;
+    }
+    // Update is called once per frame
+    void Update () {
+		//stil need to add joystick input  
+        if(Input.GetMouseButtonDown(0) && Time.time > _nextShot)
         {
+            _nextShot = Time.time + shotRate;
+            SoundSource.Play();
             Shoot();
         }
 
