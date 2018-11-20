@@ -4,15 +4,16 @@ using UnityEngine;
 
 public class VRLookWalk : MonoBehaviour
 {
-
     public Transform vrCamera;
     public float toggleAngle = 45.0f;
     public bool moveforward;
     public bool movebackward;
+
     private Rigidbody _rgbd;
     private float _nextPush;
     public float pushRate;
     public float pushForce;
+
     public AudioClip WindSound;
     public AudioSource WindSource;
     public AudioClip SkiingSound;
@@ -43,16 +44,15 @@ public class VRLookWalk : MonoBehaviour
         else if (angle <= -toggleAngle && angle > -90.0f)
         {
             movebackward = true;
-            SkiingSource.Stop();
+            //SkiingSource.Stop();
         }
         else
         {
             moveforward = false;
             movebackward = false;
-            SkiingSource.Stop();
         }
 
-        if (/*moveforward == true &&*/ Input.GetButtonDown("Fire1") && Time.time > _nextPush)
+        if (moveforward == true && Input.GetButtonDown("Fire1") && Time.time > _nextPush)
         {
             SkiingSource.Play();
             
@@ -60,16 +60,5 @@ public class VRLookWalk : MonoBehaviour
             Vector3 forward = vrCamera.TransformDirection(Vector3.forward);
             _rgbd.AddForce(forward * pushForce, ForceMode.Impulse);
         }
-        else if (Time.time > _nextPush)
-            SkiingSource.Stop();
-        /*
-        else if (movebackward == true && Input.GetButtonDown("Fire1") && Time.time > _nextPush)
-        {
-            _nextPush = Time.time + pushRate;
-            Vector3 backward = vrCamera.TransformDirection(Vector3.back);
-            _rgbd.AddForce(backward * pushForce, ForceMode.Impulse);
-        }
-        */
-
     }
 }

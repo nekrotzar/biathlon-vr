@@ -41,7 +41,5 @@ public class VR_Shoot : MonoBehaviour {
                 rend.material.SetColor("_SpecColor", Color.white);
             }
         }
-
-
     }
 }
