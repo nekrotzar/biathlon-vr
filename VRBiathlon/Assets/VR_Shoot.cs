@@ -28,6 +28,7 @@ public class VR_Shoot : MonoBehaviour {
     void Shoot()
     {
         RaycastHit hit;
+
         if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, range))
         {
             if(hit.transform.tag == "Target")
@@ -39,9 +40,17 @@ public class VR_Shoot : MonoBehaviour {
 
                 rend.material.shader = Shader.Find("Specular");
                 rend.material.SetColor("_SpecColor", Color.white);
+            } 
+            else
+            {
+                // Increase elapsed time when the shot misses
+                ScoreManager.instance.ApplyTimePenalty();
             }
         }
-
-
+        else 
+        {
+            // Increase elapsed time when the shot misses
+            ScoreManager.instance.ApplyTimePenalty();
+        }
     }
 }
