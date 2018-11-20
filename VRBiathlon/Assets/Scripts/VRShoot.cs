@@ -1,19 +1,23 @@
 ﻿using UnityEngine;
 
-public class VR_Shoot : MonoBehaviour {
+public class VRShoot : MonoBehaviour {
 
     public float range = 100f;
+    public float shotRate;
+    private float _nextShot = 1f;
+    public bool _missedShot;
+
     public Camera mainCamera;
     public AudioClip SoundClip;
     public AudioSource SoundSource;
-    public float shotRate;
+    
     public ParticleSystem flash;
     public GameObject metalImpactEffect;
     public GameObject snowImpactEffect;
-    private float _nextShot = 1f;
 
     void Start()
     {
+        _missedShot = false;
         SoundSource.clip = SoundClip;
     }
     // Update is called once per frame
@@ -25,7 +29,6 @@ public class VR_Shoot : MonoBehaviour {
             SoundSource.Play();
             Shoot();
         }
-
 	}
 
     void Shoot()
@@ -51,7 +54,7 @@ public class VR_Shoot : MonoBehaviour {
             else
             {
                 // Increase elapsed time when the shot misses
-                ScoreManager.instance.ApplyTimePenalty();
+                //ScoreManager.instance.ApplyTimePenalty();
                 Instantiate(snowImpactEffect, hit.point, Quaternion.LookRotation(hit.normal));
             }
 
@@ -59,7 +62,7 @@ public class VR_Shoot : MonoBehaviour {
         else 
         {
             // Increase elapsed time when the shot misses
-            ScoreManager.instance.ApplyTimePenalty();
+            //ScoreManager.instance.ApplyTimePenalty();
         }
     }
 }

@@ -32,7 +32,6 @@ public class VRLookWalk : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         float angle = vrCamera.localEulerAngles.x;
         // Convert angle to negative values
         angle = (angle > 180) ? angle - 360 : angle;
