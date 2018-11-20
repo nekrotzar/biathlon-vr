@@ -48,6 +48,8 @@ public class StagesManager : MonoBehaviour {
             scrM.IsRacing(false);
             canGrab.enabled = true;
             canShoot.enabled = true;
+            canWalk.enabled = false;
+            Player.GetComponent<Rigidbody>().drag = 2;
         }
 	}
 }

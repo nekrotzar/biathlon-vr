@@ -1,28 +1,32 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 public class VRLookGrab : MonoBehaviour
 {
-    public float timer = 0f;
+    public float timer;
     public Transform CircleLoading;
     public Transform VRHand;
     public Rigidbody Riffle;
-
+    private bool _holding;
     // Use this for initialization
     void Start()
     {
+        timer = 0;
+        _holding = false;
         CircleLoading.GetComponent<Image>().fillAmount = timer;
     }
 
     // Update is called once per frame
     void Update()
     {
-        timer += Time.deltaTime;
-        CircleLoading.GetComponent<Image>().fillAmount = timer / 2;
-        if (timer >= 2f)
+        if (!_holding)
         {
-            grabObj();
+            timer += Time.deltaTime;
+            CircleLoading.GetComponent<Image>().fillAmount = timer / 2;
+            if (timer >= 2f)
+            {
+                _holding = true;
+                grabObj();
+            }
         }
     }
 
@@ -36,7 +40,7 @@ public class VRLookGrab : MonoBehaviour
     {
         Riffle.transform.localRotation = VRHand.transform.rotation;
         Riffle.transform.parent = VRHand.transform;
-
         Riffle.transform.localPosition = new Vector3(-8f, -4f, 4f);
+
     }
 }

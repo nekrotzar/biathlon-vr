@@ -15,6 +15,8 @@ public class VRShoot : MonoBehaviour {
     public GameObject metalImpactEffect;
     public GameObject snowImpactEffect;
 
+    public ScoreManager _scM;
+
     void Start()
     {
         _missedShot = false;
@@ -54,7 +56,7 @@ public class VRShoot : MonoBehaviour {
             else
             {
                 // Increase elapsed time when the shot misses
-                //ScoreManager.instance.ApplyTimePenalty();
+                _scM.ApplyTimePenalty();
                 Instantiate(snowImpactEffect, hit.point, Quaternion.LookRotation(hit.normal));
             }
 
@@ -62,7 +64,7 @@ public class VRShoot : MonoBehaviour {
         else 
         {
             // Increase elapsed time when the shot misses
-            //ScoreManager.instance.ApplyTimePenalty();
+            _scM.ApplyTimePenalty();
         }
     }
 }
