@@ -10,10 +10,7 @@ public class VR_Shoot : MonoBehaviour {
     public ParticleSystem flash;
     public GameObject metalImpactEffect;
     public GameObject snowImpactEffect;
-
-
-    private float _nextShot;
-
+    private float _nextShot = 1f;
 
     void Start()
     {
