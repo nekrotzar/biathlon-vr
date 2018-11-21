@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class StagesManager : MonoBehaviour {
 
@@ -50,6 +51,11 @@ public class StagesManager : MonoBehaviour {
             canShoot.enabled = true;
             canWalk.enabled = false;
             Player.GetComponent<Rigidbody>().drag = 2;
+        }
+
+        if (Input.GetButtonDown("Cancel"))
+        {
+            SceneManager.LoadScene(0);
         }
 	}
 }

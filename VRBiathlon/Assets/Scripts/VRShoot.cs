@@ -25,7 +25,7 @@ public class VRShoot : MonoBehaviour {
     // Update is called once per frame
     void Update () {
 		//stil need to add joystick input  
-        if(Input.GetMouseButtonDown(0) && Time.time > _nextShot)
+        if((Input.GetMouseButtonDown(0) || (Input.GetButtonDown("Fire2"))) && Time.time > _nextShot)
         {
             _nextShot = Time.time + shotRate;
             SoundSource.Play();
