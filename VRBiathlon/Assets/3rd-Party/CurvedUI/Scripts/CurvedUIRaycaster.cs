@@ -7,19 +7,53 @@ using System.Collections.Generic;
 
 namespace CurvedUI
 {
-    public class CurvedUIRaycaster : GraphicRaycaster
+
+	public class CurvedUIRaycaster : GraphicRaycaster
     {
 
         [SerializeField]
         bool showDebug = false;
 
+
+
+        //Settings--------------------------------------//
+
+        // CurvedUIRaycaster must modify the position of the eventData to make it valid for the curved canvas. 
+        // It can either create a copy, or override the original. The copy will only be used for this canvas, in this frame. 
+        // The overridden original will be carried to other canvases and next frames.
+        //
+        // Set this to TRUE if this raycaster should override the original eventData.
+        // Overriding eventData allows canvas to use 1:1 scrolling. Scroll rects and sliders behave as they should on a curved surface and follow the pointer.
+        // This however breaks the interactions with flat canvases in the same scene as original eventData will not be correct for them any more. 
+        //
+        // Setting this to FALSE will create a copy of the eventData for each canvas.
+        // Flat canvases on the same scene will work fine, but scroll rects on curved canvases will move faster / slower than the pointer.
+        // May break dragging and scrolling as there will be no past eventdata to calculate delta position from.
+        //
+        // default true.
+        bool overrideEventData = true;
+
+
+
+
+        //Variables --------------------------------------//
         Canvas myCanvas;
         CurvedUISettings mySettings;
         Vector3 cyllinderMidPoint;
-
-        List<GameObject> lastHovered;
-
+        List<GameObject> objectsUnderPointer = new List<GameObject>();
         Vector2 lastCanvasPos = Vector2.zero;
+        GameObject colliderContainer;
+
+        //gaze click
+        List<GameObject> selectablesUnderGaze = new List<GameObject>();
+        List<GameObject> selectablesUnderGazeLastFrame = new List<GameObject>();
+        float objectsUnderGazeLastChangeTime;
+        bool gazeClickExecuted = false;
+        bool pointingAtCanvas = false;
+
+
+
+
         #region LIFECYCLE
         protected override void Awake()
         {
@@ -37,6 +71,82 @@ namespace CurvedUI
         protected override void Start()
         {
             CreateCollider();
+        }
+
+        protected virtual void Update()
+        {
+            //Gaze click process.
+            if (pointingAtCanvas && CurvedUIInputModule.ControlMethod == CurvedUIInputModule.CUIControlMethod.GAZE && CurvedUIInputModule.Instance.GazeUseTimedClick)
+            {
+                ProcessGazeTimedClick();
+
+                //save current selectablesUnderGaze
+                selectablesUnderGazeLastFrame.Clear();
+                selectablesUnderGazeLastFrame.AddRange(selectablesUnderGaze);
+
+                //find selectables we're currently pointing at in objects under pointer
+                selectablesUnderGaze.Clear();
+                selectablesUnderGaze.AddRange(objectsUnderPointer);
+                selectablesUnderGaze.RemoveAll(delegate (GameObject obj)
+                {
+                    return obj.GetComponent<Selectable>() == null;
+                });
+
+
+                //Animate progress bar
+                if (CurvedUIInputModule.Instance.GazeTimedClickProgressImage != null)
+                {
+                    if (CurvedUIInputModule.Instance.GazeTimedClickProgressImage.type != Image.Type.Filled)
+                        CurvedUIInputModule.Instance.GazeTimedClickProgressImage.type = Image.Type.Filled;
+
+                    CurvedUIInputModule.Instance.GazeTimedClickProgressImage.fillAmount =
+                        (Time.time - objectsUnderGazeLastChangeTime).RemapAndClamp(CurvedUIInputModule.Instance.GazeClickTimerDelay, CurvedUIInputModule.Instance.GazeClickTimer + CurvedUIInputModule.Instance.GazeClickTimerDelay, 0, 1);
+                }
+            }
+
+            //reset this variable. It will be checked again during next Raycast method run.
+            pointingAtCanvas = false;
+        }
+        #endregion
+
+
+        #region GAZE INTERACTION
+        void ProcessGazeTimedClick()
+        {
+            //debug
+            //string str = " Object under pointer: ";
+            //foreach (GameObject go in objectsUnderPointer) str += go.name + ", ";
+            //Debug.Log(str);
+
+            //two lists are not the same - selected objects changed
+            if (selectablesUnderGazeLastFrame.Count == 0 || selectablesUnderGazeLastFrame.Count != selectablesUnderGaze.Count)
+            {
+                ResetGazeTimedClick();
+                return;
+            }
+
+            //Check if objects changed since last frame
+            for (int i = 0; i < selectablesUnderGazeLastFrame.Count && i < selectablesUnderGaze.Count; i++)
+            {
+                if (selectablesUnderGazeLastFrame[i].GetInstanceID() != selectablesUnderGaze[i].GetInstanceID())
+                {
+                    ResetGazeTimedClick();
+                    return;
+                }
+            }
+
+            //Check if time is done and we havent executed the click yet
+            if (!gazeClickExecuted && Time.time > objectsUnderGazeLastChangeTime + CurvedUIInputModule.Instance.GazeClickTimer + CurvedUIInputModule.Instance.GazeClickTimerDelay)
+            {
+                Click();
+                gazeClickExecuted = true;
+            }
+        }
+
+        void ResetGazeTimedClick()
+        {
+            objectsUnderGazeLastChangeTime = Time.time;
+            gazeClickExecuted = false;
         }
         #endregion
 
@@ -56,94 +166,78 @@ namespace CurvedUI
             Ray ray3D;
 
             //get a ray to raycast with depending on the control method
-            switch (mySettings.Controller)
+            switch (CurvedUIInputModule.ControlMethod)
             {
-                case CurvedUISettings.CurvedUIController.MOUSE:
+                case CurvedUIInputModule.CUIControlMethod.MOUSE:
                 {
                     // Get a ray from the camera through the point on the screen - used for mouse input
                     ray3D = worldCamera.ScreenPointToRay(eventData.position);
                     break;
                 }
-                case CurvedUISettings.CurvedUIController.GAZE:
+                case CurvedUIInputModule.CUIControlMethod.GAZE:
                 {
                     //get a ray from the center of world camera. used for gaze input
                     ray3D = new Ray(worldCamera.transform.position, worldCamera.transform.forward);
 
-                    bool selectableUnderGaze = false;
-
-                    //find if our selected object is still under gaze
-                    foreach (GameObject go in eventData.hovered)
-                    {
-                        if (go == eventData.selectedObject)
-                        {
-                            selectableUnderGaze = true;
-                            break;
-                        }
-                    }
-
-                    //deselect if its not
-                    if (!selectableUnderGaze)
-                        eventData.selectedObject = null;
-
-                    foreach (GameObject go in eventData.hovered)
-                    {
-                        if (go == null)
-                            continue;
-
-                        Graphic gph = go.GetComponent<Graphic>();
-
-                        //go through only go that can be selected and are drawn by the canvas
-#if UNITY_5_1
-                    if (go.GetComponent<Selectable>() != null && gph != null && gph.depth != -1)
-#else
-                        if (go.GetComponent<Selectable>() != null && gph != null && gph.depth != -1 && gph.raycastTarget)
-#endif
-                        {
-                            if (eventData.selectedObject != go)
-                                eventData.selectedObject = go;
-
-                            break;
-                        }
-                    }
-
-                    //Test for selected object being dragged and initialize dragging, if needed.
-                    //We do this here to trick unity's StandAloneInputModule into thinking we used a touch or mouse to do it.
-                    if (eventData.IsPointerMoving() && eventData.pointerDrag != null
-                        && !eventData.dragging
-                        && ShouldStartDrag(eventData.pressPosition, eventData.position, EventSystem.current.pixelDragThreshold, eventData.useDragThreshold))
-                    {
-                        ExecuteEvents.Execute(eventData.pointerDrag, eventData, ExecuteEvents.beginDragHandler);
-                        eventData.dragging = true;
-                    }
-
+                    UpdateSelectedObjects(eventData);
 
                     break;
                 }
-                case CurvedUISettings.CurvedUIController.WORLD_MOUSE:
+                case CurvedUIInputModule.CUIControlMethod.WORLD_MOUSE:
                 {
                     // Get a ray set in CustromControllerRay property
-                    ray3D = new Ray(worldCamera.transform.position, (mySettings.CanvasToCurvedCanvas(mySettings.WorldSpaceMouseInCanvasSpace) - myCanvas.worldCamera.transform.position));
+                    ray3D = new Ray(worldCamera.transform.position, (mySettings.CanvasToCurvedCanvas(CurvedUIInputModule.Instance.WorldSpaceMouseInCanvasSpace) - myCanvas.worldCamera.transform.position));
                     break;
                 }
-                case CurvedUISettings.CurvedUIController.VIVE:
+                case CurvedUIInputModule.CUIControlMethod.VIVE:
                 {
-                    // Get a ray from right controller.
-
 #if CURVEDUI_VIVE
-                    ray3D = new Ray((eventData as CurvedUIPointerEventData).Controller.transform.position, (eventData as CurvedUIPointerEventData).Controller.transform.forward);
+					// Get a ray from proper controller.
+                    if ((eventData as CurvedUIPointerEventData).Controller == CurvedUIInputModule.Right.gameObject)
+                    {
+                        ray3D = new Ray(CurvedUIInputModule.Right.PointingOrigin, CurvedUIInputModule.Right.PointingDirection);
+                    }
+                    else if ((eventData as CurvedUIPointerEventData).Controller == CurvedUIInputModule.Left.gameObject)
+                    {
+                        ray3D = new Ray(CurvedUIInputModule.Left.PointingOrigin, CurvedUIInputModule.Left.PointingDirection);
+                    }
+                    else
+                    {
+                        ray3D = new Ray();
+                        Debug.LogWarning("CurvedUI: Unknown controller");
+                    }
 
                     break;
 #else
-                    goto case CurvedUISettings.CurvedUIController.CUSTOM_RAY;
+                    goto case CurvedUIInputModule.CUIControlMethod.CUSTOM_RAY;
 #endif
-
                 }
-                case CurvedUISettings.CurvedUIController.CUSTOM_RAY:
+                case CurvedUIInputModule.CUIControlMethod.OCULUS_TOUCH:
+                {
+                    goto case CurvedUIInputModule.CUIControlMethod.CUSTOM_RAY;
+                }
+                case CurvedUIInputModule.CUIControlMethod.CUSTOM_RAY:
                 {
                     // Get a ray set in CustromControllerRay property
-                    ray3D = mySettings.CustomControllerRay;
+                    ray3D = CurvedUIInputModule.CustomControllerRay;
+                    //ProcessMove(eventData);
 
+                    UpdateSelectedObjects(eventData);
                     break;
+                }
+//                case CurvedUIInputModule.CUIControlMethod.DAYDREAM: //deprecated
+//                {
+//                    goto case CurvedUIInputModule.CUIControlMethod.CUSTOM_RAY;
+//                }
+                case CurvedUIInputModule.CUIControlMethod.GOOGLEVR:
+                {
+#if CURVEDUI_GOOGLEVR
+					ray3D = new Ray(GvrPointerInputModule.Pointer.PointerTransform.position, GvrPointerInputModule.Pointer.PointerTransform.forward);
+					break;
+#else
+					Debug.LogError("CURVEDUI: Missing GoogleVR support code. Enable GoogleVR control method on CurvedUISettings component.");
+                    goto case CurvedUIInputModule.CUIControlMethod.GAZE;
+#endif 
                 }
                 default:
                 {
@@ -152,63 +246,131 @@ namespace CurvedUI
                 }
             }
 
+
+            //Create a copy of the eventData to be used by this canvas. This allows
+            PointerEventData newEventData = new PointerEventData(EventSystem.current);
+            if (!overrideEventData)
+            {
+                newEventData.pointerEnter = eventData.pointerEnter;
+                newEventData.rawPointerPress = eventData.rawPointerPress;
+                newEventData.pointerDrag = eventData.pointerDrag;
+                newEventData.pointerCurrentRaycast = eventData.pointerCurrentRaycast;
+                newEventData.pointerPressRaycast = eventData.pointerPressRaycast;
+                newEventData.hovered = new List<GameObject>();
+                newEventData.hovered.AddRange(eventData.hovered);
+                newEventData.eligibleForClick = eventData.eligibleForClick;
+                newEventData.pointerId = eventData.pointerId;
+                newEventData.position = eventData.position;
+                newEventData.delta = eventData.delta;
+                newEventData.pressPosition = eventData.pressPosition;
+                newEventData.clickTime = eventData.clickTime;
+                newEventData.clickCount = eventData.clickCount;
+                newEventData.scrollDelta = eventData.scrollDelta;
+                newEventData.useDragThreshold = eventData.useDragThreshold;
+                newEventData.dragging = eventData.dragging;
+                newEventData.button = eventData.button;
+            }
+
+
+
             if (mySettings.Angle != 0 && mySettings.enabled)
             { // use custom raycasting only if Curved effect is enabled
+
+
+
+                //Getting remappedPosition on the curved canvas ------------------------------//
+                //This will be later passed to GraphicRaycaster so it can discover interactions as usual.
+                //If we did not hit the curved canvas, return - no interactions are possible
+			
+
+                //Physical raycast to find interaction point
                 Vector2 remappedPosition = eventData.position;
-
-                //Test only this object's layer if settings require it.
-                int myLayerMask = -1;
-                if (mySettings.RaycastMyLayerOnly)
-                {
-                    myLayerMask = 1 << this.gameObject.layer;
-                }
-
                 switch (mySettings.Shape)
                 {
-                    //find if we hit anything, if not, do nothing
                     case CurvedUISettings.CurvedUIShape.CYLINDER:
                     {
-                        if (!RaycastToCyllinderCanvas(ray3D, out remappedPosition, false, myLayerMask)) return;
+                        if (!RaycastToCyllinderCanvas(ray3D, out remappedPosition, false)) return;
                         break;
                     }
                     case CurvedUISettings.CurvedUIShape.CYLINDER_VERTICAL:
                     {
-                        if (!RaycastToCyllinderVerticalCanvas(ray3D, out remappedPosition, false, myLayerMask)) return;
+                        if (!RaycastToCyllinderVerticalCanvas(ray3D, out remappedPosition, false)) return;
                         break;
                     }
                     case CurvedUISettings.CurvedUIShape.RING:
                     {
-                        if (!RaycastToRingCanvas(ray3D, out remappedPosition, false, myLayerMask)) return;
+                        if (!RaycastToRingCanvas(ray3D, out remappedPosition, false)) return;
                         break;
                     }
                     case CurvedUISettings.CurvedUIShape.SPHERE:
                     {
-                        if (!RaycastToSphereCanvas(ray3D, out remappedPosition, false, myLayerMask)) return;
+                        if (!RaycastToSphereCanvas(ray3D, out remappedPosition, false)) return;
                         break;
                     }
                 }
 
-                // Update event data
-                eventData.position = remappedPosition;
+                //if we got here, it means user is pointing at this canvas.
+                pointingAtCanvas = true;
 
-                //update delta for vive
-                if(mySettings.Controller == CurvedUISettings.CurvedUIController.VIVE) {
-                    eventData.delta = remappedPosition - lastCanvasPos;
+
+                //Creating eventData for canvas Raycasting -------------------//
+                //Which eventData were going to use?
+                PointerEventData eventDataToUse = overrideEventData ? eventData : newEventData;
+
+                // Swap event data pressPosition to our remapped pos if this is the frame of the press
+                if (eventDataToUse.pressPosition == eventDataToUse.position)
+                    eventDataToUse.pressPosition = remappedPosition;
+
+                // Swap event data position to our remapped pos
+                eventDataToUse.position = remappedPosition;
+
+
+
+
+
+                //Scroll Handling---------------------------------------------//
+                //We must handle scroll a little differently on these platforms
+                if (CurvedUIInputModule.ControlMethod == CurvedUIInputModule.CUIControlMethod.VIVE)
+                {
+                    eventDataToUse.delta = remappedPosition - lastCanvasPos;
                     lastCanvasPos = remappedPosition;
                 }
-               
+                //else if (CurvedUIInputModule.ControlMethod == CurvedUIInputModule.CUIControlMethod.GAZE)
+                //{
+                //    //Test for selected object being dragged and initialize dragging, if needed.
+                //    //We do this here to trick unity's StandAloneInputModule into thinking we used a touch or mouse to do it.
+                //    if (eventData.IsPointerMoving() && eventData.pointerDrag != null && !eventData.dragging
+                //    && ShouldStartDrag(eventData.pressPosition, eventData.position, EventSystem.current.pixelDragThreshold, eventData.useDragThreshold))
+                //    {
+                //        ExecuteEvents.Execute(eventData.pointerDrag, eventData, ExecuteEvents.beginDragHandler);
+                //        eventData.dragging = true;
+                //    }
+                //}
             }
 
+
+
             //store objects under pointer so they can quickly retrieved if needed by other scripts
-            lastHovered = eventData.hovered;
+            objectsUnderPointer = eventData.hovered;
 
             // Use base class raycast method to finish the raycast if we hit anything
-            base.Raycast(eventData, resultAppendList);
+            base.Raycast(overrideEventData ? eventData : newEventData, resultAppendList);
+
         }
 
 
 
-        public virtual bool RaycastToCyllinderCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false, int myLayerMask = -1)
+		LayerMask GetLayerMaskForMyLayer(){
+			int myLayerMask = -1;
+			if (mySettings.RaycastMyLayerOnly)
+			{
+				myLayerMask = 1 << this.gameObject.layer;
+			}
+			return myLayerMask;
+		}
+
+
+        public virtual bool RaycastToCyllinderCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false)
         {
 
             if (showDebug)
@@ -216,9 +378,17 @@ namespace CurvedUI
                 Debug.DrawLine(ray3D.origin, ray3D.GetPoint(1000), Color.red);
             }
 
+			LayerMask myLayerMask = GetLayerMaskForMyLayer();
+
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray3D, out hit, float.PositiveInfinity, myLayerMask))
             {
+                //find if we hit this canvas - this needs to be uncommented
+                if (overrideEventData && hit.collider.gameObject != this.gameObject && (colliderContainer == null || hit.collider.transform.parent != colliderContainer.transform))
+                {
+                    o_canvasPos = Vector2.zero;
+                    return false;
+                }
 
                 //direction from the cyllinder center to the hit point
                 Vector3 localHitPoint = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(hit.point);
@@ -243,7 +413,6 @@ namespace CurvedUI
 
                 if (showDebug)
                 {
-                    //Debug.DrawLine(canvasWorldPoint, canvasWorldPoint.ModifyY(canvasWorldPoint.y + 10), Color.blue);
                     Debug.DrawLine(hit.point, hit.point.ModifyY(hit.point.y + 10), Color.green);
                     Debug.DrawLine(hit.point, myCanvas.transform.localToWorldMatrix.MultiplyPoint3x4(cyllinderMidPoint), Color.yellow);
                 }
@@ -255,7 +424,7 @@ namespace CurvedUI
             return false;
         }
 
-        public virtual bool RaycastToCyllinderVerticalCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false, int myLayerMask = -1)
+        public virtual bool RaycastToCyllinderVerticalCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false)
         {
 
             if (showDebug)
@@ -263,9 +432,18 @@ namespace CurvedUI
                 Debug.DrawLine(ray3D.origin, ray3D.GetPoint(1000), Color.red);
             }
 
+
+			LayerMask myLayerMask = GetLayerMaskForMyLayer();
+
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray3D, out hit, float.PositiveInfinity, myLayerMask))
             {
+                //find if we hit this canvas
+                if (overrideEventData && hit.collider.gameObject != this.gameObject && (colliderContainer == null || hit.collider.transform.parent != colliderContainer.transform))
+                {
+                    o_canvasPos = Vector2.zero;
+                    return false;
+                }
 
                 //direction from the cyllinder center to the hit point
                 Vector3 localHitPoint = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(hit.point);
@@ -290,7 +468,6 @@ namespace CurvedUI
 
                 if (showDebug)
                 {
-                    //Debug.DrawLine(canvasWorldPoint, canvasWorldPoint.ModifyY(canvasWorldPoint.y + 10), Color.blue);
                     Debug.DrawLine(hit.point, hit.point.ModifyY(hit.point.y + 10), Color.green);
                     Debug.DrawLine(hit.point, myCanvas.transform.localToWorldMatrix.MultiplyPoint3x4(cyllinderMidPoint), Color.yellow);
                 }
@@ -302,18 +479,26 @@ namespace CurvedUI
             return false;
         }
 
-        public virtual bool RaycastToRingCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false, int myLayerMask = -1)
+        public virtual bool RaycastToRingCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false)
         {
+			LayerMask myLayerMask = GetLayerMaskForMyLayer();
 
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray3D, out hit, float.PositiveInfinity, myLayerMask))
             {
+                //find if we hit this canvas
+                if (overrideEventData && hit.collider.gameObject != this.gameObject && (colliderContainer == null || hit.collider.transform.parent != colliderContainer.transform))
+                {
+                    o_canvasPos = Vector2.zero;
+                    return false;
+                }
+
 
                 //local hit point on canvas and a direction from center
                 Vector3 localHitPoint = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(hit.point);
                 Vector3 directionFromRingCenter = localHitPoint.ModifyZ(0).normalized;
-
                 Vector2 canvasSize = myCanvas.GetComponent<RectTransform>().rect.size;
+
 
                 //angle between middle of the projected canvas and hit point direction from center
                 float angle = -AngleSigned(directionFromRingCenter.ModifyZ(0), Vector3.up, Vector3.back);
@@ -324,6 +509,7 @@ namespace CurvedUI
                 if (showDebug)
                     Debug.Log("angle: " + angle);
 
+
                 //map x coordinate based on angle between vector up and direction to hitpoint
                 if (angle < 0)
                 {
@@ -332,6 +518,7 @@ namespace CurvedUI
                 else {
                     pointOnCanvas.x = angle.Remap(360, 360 - mySettings.Angle, -canvasSize.x / 2.0f, canvasSize.x / 2.0f);
                 }
+
 
                 //map y coordinate based on hitpoint distance from the center and external diameter
                 pointOnCanvas.y = localHitPoint.magnitude.Remap(mySettings.RingExternalDiameter * 0.5f * (1 - mySettings.RingFill), mySettings.RingExternalDiameter * 0.5f,
@@ -350,12 +537,19 @@ namespace CurvedUI
         }
 
 
-        public virtual bool RaycastToSphereCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false, int myLayerMask = -1)
+        public virtual bool RaycastToSphereCanvas(Ray ray3D, out Vector2 o_canvasPos, bool OutputInCanvasSpace = false)
         {
+			LayerMask myLayerMask = GetLayerMaskForMyLayer();
 
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray3D, out hit, float.PositiveInfinity, myLayerMask))
             {
+                //find if we hit this canvas
+                if (overrideEventData && hit.collider.gameObject != this.gameObject && (colliderContainer == null || hit.collider.transform.parent != colliderContainer.transform))
+                {
+                    o_canvasPos = Vector2.zero;
+                    return false;
+                }
 
                 Vector2 canvasSize = myCanvas.GetComponent<RectTransform>().rect.size;
                 float radius = (mySettings.PreserveAspect ? mySettings.GetCyllinderRadiusInCanvasSpace() : canvasSize.x / 2.0f);
@@ -408,7 +602,7 @@ namespace CurvedUI
         /// Creates a mesh collider for curved canvas based on current angle and curve segments.
         /// </summary>
         /// <returns>The collider.</returns>
-        protected Collider CreateCollider()
+        protected void CreateCollider()
         {
 
             //remove all colliders on this object
@@ -419,9 +613,9 @@ namespace CurvedUI
                 Destroy(Cols[i]);
             }
 
-            if (!mySettings.BlocksRaycasts) return null;
+            if (!mySettings.BlocksRaycasts) return; //null;
 
-            if (mySettings.Shape == CurvedUISettings.CurvedUIShape.SPHERE && !mySettings.PreserveAspect && mySettings.VerticalAngle == 0) return null;
+            if (mySettings.Shape == CurvedUISettings.CurvedUIShape.SPHERE && !mySettings.PreserveAspect && mySettings.VerticalAngle == 0) return;// null;
 
             //create a collider based on mapping type
             switch (mySettings.Shape)
@@ -429,76 +623,169 @@ namespace CurvedUI
 
                 case CurvedUISettings.CurvedUIShape.CYLINDER:
                 {
-                    //create a meshfilter if this object does not have one yet.
-                    if (GetComponent<MeshFilter>() == null)
+
+                    //creating a convex (lower performance - many parts) collider for when we have a rigidbody attached
+                    if (mySettings.ForceUseBoxCollider || GetComponent<Rigidbody>() != null || GetComponentInParent<Rigidbody>() != null)
                     {
-                        this.gameObject.AddComponent<MeshFilter>();
+                        if (colliderContainer != null)
+                            GameObject.Destroy(colliderContainer);
+
+                        colliderContainer = CreateConvexCyllinderCollider();
                     }
-                    MeshFilter mf = GetComponent<MeshFilter>();
-                    MeshCollider mc = this.gameObject.AddComponent<MeshCollider>();
-
-                    Mesh meshie = CreateCyllinderColliderMesh();
-
-                    mf.mesh = meshie;
-                    mc.sharedMesh = meshie;
-                    //mc.convex = true; // breaks the raycasting.
-
-                    return mc as Collider;
+                    else // create a faster single mesh collier when possible
+                    {
+                        SetupMeshColliderUsingMesh(CreateCyllinderColliderMesh());
+                    }
+                    return;
                 }
                 case CurvedUISettings.CurvedUIShape.CYLINDER_VERTICAL:
                 {
-                    //create a meshfilter if this object does not have one yet.
-                    if (GetComponent<MeshFilter>() == null)
+                    //creating a convex (lower performance - many parts) collider for when we have a rigidbody attached
+                    if (mySettings.ForceUseBoxCollider || GetComponent<Rigidbody>() != null || GetComponentInParent<Rigidbody>() != null)
                     {
-                        this.gameObject.AddComponent<MeshFilter>();
+                        if (colliderContainer != null)
+                            GameObject.Destroy(colliderContainer);
+
+                        colliderContainer = CreateConvexCyllinderCollider(true);
                     }
-                    MeshFilter mf = GetComponent<MeshFilter>();
-                    MeshCollider mc = this.gameObject.AddComponent<MeshCollider>();
-
-                    Mesh meshie = CreateCyllinderColliderMesh(true);
-
-                    mf.mesh = meshie;
-                    mc.sharedMesh = meshie;
-                    //mc.convex = true; // breaks the raycasting.
-
-
-                    return mc as Collider;
+                    else // create a faster single mesh collier when possible
+                    {
+                        SetupMeshColliderUsingMesh(CreateCyllinderColliderMesh(true));
+                    }
+                    return;
                 }
 
                 case CurvedUISettings.CurvedUIShape.RING:
                 {
-
                     BoxCollider col = this.gameObject.AddComponent<BoxCollider>();
                     col.size = new Vector3(mySettings.RingExternalDiameter, mySettings.RingExternalDiameter, 1.0f);
-                    return col as Collider;
+                    return;
                 }
 
                 case CurvedUISettings.CurvedUIShape.SPHERE:
                 {
+                    //rigidbody in parent?
+                    if (GetComponent<Rigidbody>() != null || GetComponentInParent<Rigidbody>() != null)
+                        Debug.LogWarning("CurvedUI: Sphere shape canvases as children of rigidbodies do not support user input. Switch to Cyllinder shape or remove the rigidbody from parent.", this.gameObject);
 
-                    //create a meshfilter if this object does not have one yet.
-                    if (GetComponent<MeshFilter>() == null)
-                    {
-                        this.gameObject.AddComponent<MeshFilter>();
-                    }
-
-                    MeshFilter mf = GetComponent<MeshFilter>();
-                    MeshCollider mc = this.gameObject.AddComponent<MeshCollider>();
-
-                    Mesh meshie = CreateSphereColliderMesh();
-
-                    mf.mesh = meshie;
-                    mc.sharedMesh = meshie;
-                    //mc.convex = true; // breaks the raycasting.
-
-
-                    return mc as Collider;
+                    SetupMeshColliderUsingMesh(CreateSphereColliderMesh());
+                    return;
                 }
                 default:
                 {
-                    return null;    //no collider for other cases.
+                    return;
                 }
             }
+
+        }
+
+        /// <summary>
+        /// Adds neccessary components and fills them with given mesh data.
+        /// </summary>
+        /// <param name="meshie"></param>
+        void SetupMeshColliderUsingMesh(Mesh meshie)
+        {
+            MeshFilter mf = this.AddComponentIfMissing<MeshFilter>();
+            MeshCollider mc = this.gameObject.AddComponent<MeshCollider>();
+            mf.mesh = meshie;
+            mc.sharedMesh = meshie;
+        }
+
+
+        GameObject CreateConvexCyllinderCollider(bool vertical = false)
+        {
+
+            GameObject go = new GameObject("_CurvedUIColliders");
+            go.layer = this.gameObject.layer;
+            go.transform.SetParent(this.transform);
+            go.transform.ResetTransform();
+
+            Mesh meshie = new Mesh();
+
+            Vector3[] Vertices = new Vector3[4];
+            (myCanvas.transform as RectTransform).GetWorldCorners(Vertices);
+            meshie.vertices = Vertices;
+
+            //rearrange them to be in an easy to interpolate order and convert to canvas local spce
+            if (vertical)
+            {
+                Vertices[0] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[1]);
+                Vertices[1] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[2]);
+                Vertices[2] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[0]);
+                Vertices[3] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[3]);
+            }
+            else
+            {
+                Vertices[0] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[1]);
+                Vertices[1] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[0]);
+                Vertices[2] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[2]);
+                Vertices[3] = myCanvas.transform.worldToLocalMatrix.MultiplyPoint3x4(meshie.vertices[3]);
+            }
+
+            meshie.vertices = Vertices;
+
+            //create a new array of vertices, subdivided as needed
+            List<Vector3> verts = new List<Vector3>();
+            int vertsCount = Mathf.Max(8, Mathf.RoundToInt(mySettings.BaseCircleSegments * Mathf.Abs(mySettings.Angle) / 360.0f));
+
+            for (int i = 0; i < vertsCount; i++)
+            {
+                verts.Add(Vector3.Lerp(meshie.vertices[0], meshie.vertices[2], (i * 1.0f) / (vertsCount - 1)));
+            }
+
+            //curve the verts in canvas local space
+            if (mySettings.Angle != 0)
+            {
+                Rect canvasRect = myCanvas.GetComponent<RectTransform>().rect;
+                float radius = mySettings.GetCyllinderRadiusInCanvasSpace();
+
+                for (int i = 0; i < verts.Count; i++)
+                {
+
+                    Vector3 newpos = verts[i];
+                    if (vertical)
+                    {
+                        float theta = (verts[i].y / canvasRect.size.y) * mySettings.Angle * Mathf.Deg2Rad;
+                        newpos.y = Mathf.Sin(theta) * radius;
+                        newpos.z += Mathf.Cos(theta) * radius - radius;
+                        verts[i] = newpos;
+                    }
+                    else
+                    {
+                        float theta = (verts[i].x / canvasRect.size.x) * mySettings.Angle * Mathf.Deg2Rad;
+                        newpos.x = Mathf.Sin(theta) * radius;
+                        newpos.z += Mathf.Cos(theta) * radius - radius;
+                        verts[i] = newpos;
+                    }
+                }
+            }
+
+
+            //create our box colliders and arrange them in a nice cyllinder
+            for (int i = 0; i < verts.Count - 1; i++)
+            {
+                GameObject newBox = new GameObject("Box collider");
+                newBox.layer = this.gameObject.layer;
+                newBox.transform.SetParent(go.transform);
+                newBox.transform.ResetTransform();
+                newBox.AddComponent<BoxCollider>();
+
+                if (vertical)
+                {
+                    newBox.transform.localPosition = new Vector3(0, (verts[i + 1].y + verts[i].y) * 0.5f, (verts[i + 1].z + verts[i].z) * 0.5f);
+                    newBox.transform.localScale = new Vector3(0.1f, Vector3.Distance(Vertices[0], Vertices[1]), Vector3.Distance(verts[i + 1], verts[i]));
+                    newBox.transform.localRotation = Quaternion.LookRotation((verts[i + 1] - verts[i]), Vertices[0] - Vertices[1]);
+                }
+                else
+                {
+                    newBox.transform.localPosition = new Vector3((verts[i + 1].x + verts[i].x) * 0.5f, 0, (verts[i + 1].z + verts[i].z) * 0.5f);
+                    newBox.transform.localScale = new Vector3(0.1f, Vector3.Distance(Vertices[0], Vertices[1]), Vector3.Distance(verts[i + 1], verts[i]));
+                    newBox.transform.localRotation = Quaternion.LookRotation((verts[i + 1] - verts[i]), Vertices[0] - Vertices[1]);
+                }
+
+            }
+
+            return go;
 
         }
 
@@ -699,7 +986,183 @@ namespace CurvedUI
 
             return (pressPos - currentPos).sqrMagnitude >= threshold * threshold;
         }
+
+        protected virtual void ProcessMove(PointerEventData pointerEvent)
+        {
+            var targetGO = pointerEvent.pointerCurrentRaycast.gameObject;
+            HandlePointerExitAndEnter(pointerEvent, targetGO);
+        }
+
+        protected void UpdateSelectedObjects(PointerEventData eventData)
+        {
+
+            //deselect last object if we moved beyond it
+            bool selectedStillUnderGaze = false;
+            foreach (GameObject go in eventData.hovered)
+            {
+                if (go == eventData.selectedObject)
+                {
+                    selectedStillUnderGaze = true;
+                    break;
+                }
+            }
+            if (!selectedStillUnderGaze) eventData.selectedObject = null;
+
+
+            //find new object to select in hovered objects
+            foreach (GameObject go in eventData.hovered)
+            {
+                if (go == null) continue;
+
+                //go through only go that can be selected and are drawn by the canvas
+                Graphic gph = go.GetComponent<Graphic>();
+#if UNITY_5_1
+                        if (go.GetComponent<Selectable>() != null && gph != null && gph.depth != -1)
+#else
+                if (go.GetComponent<Selectable>() != null && gph != null && gph.depth != -1 && gph.raycastTarget)
+#endif
+                {
+                    if (eventData.selectedObject != go)
+                        eventData.selectedObject = go;
+                    break;
+                }
+            }
+
+
+            if (mySettings.ControlMethod == CurvedUIInputModule.CUIControlMethod.GAZE)
+            {
+                //Test for selected object being dragged and initialize dragging, if needed.
+                //We do this here to trick unity's StandAloneInputModule into thinking we used a touch or mouse to do it.
+                if (eventData.IsPointerMoving() && eventData.pointerDrag != null
+                    && !eventData.dragging
+                    && ShouldStartDrag(eventData.pressPosition, eventData.position, EventSystem.current.pixelDragThreshold, eventData.useDragThreshold))
+                {
+                    ExecuteEvents.Execute(eventData.pointerDrag, eventData, ExecuteEvents.beginDragHandler);
+                    eventData.dragging = true;
+                }
+            }
+        }
+
+        // walk up the tree till a common root between the last entered and the current entered is foung
+        // send exit events up to (but not inluding) the common root. Then send enter events up to
+        // (but not including the common root).
+        protected void HandlePointerExitAndEnter(PointerEventData currentPointerData, GameObject newEnterTarget)
+        {
+            // if we have no target / pointerEnter has been deleted
+            // just send exit events to anything we are tracking
+            // then exit
+            if (newEnterTarget == null || currentPointerData.pointerEnter == null)
+            {
+                for (var i = 0; i < currentPointerData.hovered.Count; ++i)
+                    ExecuteEvents.Execute(currentPointerData.hovered[i], currentPointerData, ExecuteEvents.pointerExitHandler);
+
+                currentPointerData.hovered.Clear();
+
+                if (newEnterTarget == null)
+                {
+                    currentPointerData.pointerEnter = newEnterTarget;
+                    return;
+                }
+            }
+
+            // if we have not changed hover target
+            if (currentPointerData.pointerEnter == newEnterTarget && newEnterTarget)
+                return;
+
+            GameObject commonRoot = FindCommonRoot(currentPointerData.pointerEnter, newEnterTarget);
+
+            // and we already an entered object from last time
+            if (currentPointerData.pointerEnter != null)
+            {
+                // send exit handler call to all elements in the chain
+                // until we reach the new target, or null!
+                Transform t = currentPointerData.pointerEnter.transform;
+
+                while (t != null)
+                {
+                    // if we reach the common root break out!
+                    if (commonRoot != null && commonRoot.transform == t)
+                        break;
+
+                    ExecuteEvents.Execute(t.gameObject, currentPointerData, ExecuteEvents.pointerExitHandler);
+                    currentPointerData.hovered.Remove(t.gameObject);
+                    t = t.parent;
+                }
+            }
+
+            // now issue the enter call up to but not including the common root
+            currentPointerData.pointerEnter = newEnterTarget;
+            if (newEnterTarget != null)
+            {
+                Transform t = newEnterTarget.transform;
+
+                while (t != null && t.gameObject != commonRoot)
+                {
+                    ExecuteEvents.Execute(t.gameObject, currentPointerData, ExecuteEvents.pointerEnterHandler);
+                    currentPointerData.hovered.Add(t.gameObject);
+                    t = t.parent;
+                }
+            }
+        }
+
+        protected static GameObject FindCommonRoot(GameObject g1, GameObject g2)
+        {
+            if (g1 == null || g2 == null)
+                return null;
+
+            var t1 = g1.transform;
+            while (t1 != null)
+            {
+                var t2 = g2.transform;
+                while (t2 != null)
+                {
+                    if (t1 == t2)
+                        return t1.gameObject;
+                    t2 = t2.parent;
+                }
+                t1 = t1.parent;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// REturns a screen point under which a ray intersects the curved canvas in its event camera view
+        /// </summary>
+        /// <returns><c>true</c>, if screen space point by ray was gotten, <c>false</c> otherwise.</returns>
+        /// <param name="ray">Ray.</param>
+        /// <param name="o_positionOnCanvas">O position on canvas.</param>
+        bool GetScreenSpacePointByRay(Ray ray, out Vector2 o_positionOnCanvas)
+        {
+
+            switch (mySettings.Shape)
+            {
+                case CurvedUISettings.CurvedUIShape.CYLINDER:
+                {
+                    return RaycastToCyllinderCanvas(ray, out o_positionOnCanvas, false);
+                }
+                case CurvedUISettings.CurvedUIShape.CYLINDER_VERTICAL:
+                {
+                    return RaycastToCyllinderVerticalCanvas(ray, out o_positionOnCanvas, false);
+                }
+                case CurvedUISettings.CurvedUIShape.RING:
+                {
+                    return RaycastToRingCanvas(ray, out o_positionOnCanvas, false);
+                }
+                case CurvedUISettings.CurvedUIShape.SPHERE:
+                {
+                    return RaycastToSphereCanvas(ray, out o_positionOnCanvas, false);
+                }
+                default:
+                {
+                    o_positionOnCanvas = Vector2.zero;
+                    return false;
+                }
+            }
+
+        }
         #endregion
+
+
 
 
 
@@ -711,12 +1174,98 @@ namespace CurvedUI
             CreateCollider();
         }
 
+        /// <summary>
+        /// Returns all objects currently under the pointer
+        /// </summary>
+        /// <returns>The objects under pointer.</returns>
         public List<GameObject> GetObjectsUnderPointer()
         {
-            if (lastHovered == null) lastHovered = new List<GameObject>();
-            return lastHovered;
+            if (objectsUnderPointer == null) objectsUnderPointer = new List<GameObject>();
+            return objectsUnderPointer;
         }
 
+
+        /// <summary>
+        /// Returns all the canvas objects that are visible under given Screen Position of EventCamera
+        /// </summary>
+        public List<GameObject> GetObjectsUnderScreenPos(Vector2 screenPos, Camera eventCamera = null)
+        {
+            if (eventCamera == null)
+                eventCamera = myCanvas.worldCamera;
+
+            return GetObjectsHitByRay(eventCamera.ScreenPointToRay(screenPos));
+        }
+
+        /// <summary>
+        /// Returns all the canvas objects that are intersected by given ray
+        /// </summary>
+        /// <returns>The objects hit by ray.</returns>
+        /// <param name="ray">Ray.</param>
+        public List<GameObject> GetObjectsHitByRay(Ray ray)
+        {
+            List<GameObject> results = new List<GameObject>();
+
+            Vector2 pointerPosition;
+
+            //ray outside the canvas, return null
+            if (!GetScreenSpacePointByRay(ray, out pointerPosition))
+                return results;
+
+            //lets find the graphics under ray!
+            List<Graphic> s_SortedGraphics = new List<Graphic>();
+            var foundGraphics = GraphicRegistry.GetGraphicsForCanvas(myCanvas);
+            for (int i = 0; i < foundGraphics.Count; ++i)
+            {
+                Graphic graphic = foundGraphics[i];
+
+                // -1 means it hasn't been processed by the canvas, which means it isn't actually drawn
+                if (graphic.depth == -1 || !graphic.raycastTarget)
+                    continue;
+
+                if (!RectTransformUtility.RectangleContainsScreenPoint(graphic.rectTransform, pointerPosition, eventCamera))
+                    continue;
+
+                if (graphic.Raycast(pointerPosition, eventCamera))
+                    s_SortedGraphics.Add(graphic);
+
+            }
+
+            s_SortedGraphics.Sort((g1, g2) => g2.depth.CompareTo(g1.depth));
+            for (int i = 0; i < s_SortedGraphics.Count; ++i)
+                results.Add(s_SortedGraphics[i].gameObject);
+
+            s_SortedGraphics.Clear();
+
+            return results;
+        }
+
+        /// <summary>
+        /// Sends OnClick event to every Button under pointer.
+        /// </summary>
+        public void Click()
+        {
+            for (int i = 0; i < GetObjectsUnderPointer().Count; i++)
+            {
+				ExecuteEvents.Execute<IPointerClickHandler>(GetObjectsUnderPointer()[i], new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
+
+//				//Old method
+//                Button butt = GetObjectsUnderPointer()[i].GetComponent<Button>();
+//                if (butt && butt.enabled && butt.interactable)
+//                {
+//                    butt.onClick.Invoke();
+//                    //possible alternative: ExecuteEvents.Execute<IPointerClickHandler>(butt.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
+//                    if (showDebug) Debug.Log("Clicked on: " + butt.gameObject.name, butt.gameObject);
+//                }
+//
+//                Toggle togg = GetObjectsUnderPointer()[i].GetComponent<Toggle>();
+//                if (togg && togg.enabled && togg.interactable)
+//                {
+//                    togg.isOn = !togg.isOn;
+//                    if (showDebug) Debug.Log("Clicked on: " + togg.gameObject.name, togg.gameObject);
+//                    continue;
+//                }
+            }
+        }
         #endregion
 
 
@@ -765,9 +1314,6 @@ namespace CurvedUI
         }
 
 
-
-
-
         Vector3 TesselateQuad(List<Vector3> quad, float x, float y)
         {
 
@@ -775,17 +1321,15 @@ namespace CurvedUI
 
             //1. calculate weighting factors
             List<float> weights = new List<float>(){
-            (1-x) * (1-y),
-            (1-x) * y,
-            x * y,
-            x * (1-y),
-        };
+                (1-x) * (1-y),
+                (1-x) * y,
+                x * y,
+                x * (1-y),
+            };
 
             //2. interpolate pos using weighting factors
             for (int i = 0; i < 4; i++)
-            {
                 ret += quad[i] * weights[i];
-            }
             return ret;
         }
 

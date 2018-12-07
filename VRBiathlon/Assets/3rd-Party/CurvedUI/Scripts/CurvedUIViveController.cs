@@ -19,7 +19,8 @@ namespace CurvedUI
 
 		#region internal variables
 		private uint controllerIndex;
-		private SteamVR_TrackedObject trackedController;
+        private Type controllerType = Type.UNDEFINED;
+        private SteamVR_TrackedObject trackedController;
 		private SteamVR_Controller.Device device;
 
 		private Vector2 touchpadAxis = Vector2.zero;
@@ -29,6 +30,16 @@ namespace CurvedUI
 		private ushort hapticPulseStrength;
 		private int hapticPulseCountdown;
 		private ushort maxHapticVibration = 3999;
+
+        private Vector3 oculusTouchPoitingOriginOffset = new Vector3(0, -0.0258f, -0.033f);
+        private Vector3 oculusTouchPoitingRotationOffset = new Vector3(38, 0, 0);
+
+        public enum Type
+        {
+            UNDEFINED = 0,
+            VIVE = 1,
+            OCULUS_TOUCH = 2,
+        }
 		#endregion
 
 
@@ -46,9 +57,11 @@ namespace CurvedUI
 		public event ViveInputEvent TouchpadTouched;
 		public event ViveInputEvent TouchpadUntouched;
 		public event ViveInputEvent TouchpadAxisChanged;
+        public event ViveEvent ModelLoaded;
 
 
-		public virtual void OnTriggerClicked(ViveInputArgs e)
+
+        public virtual void OnTriggerClicked(ViveInputArgs e)
 		{
 			if (TriggerClicked != null)
 				TriggerClicked(this, e);
@@ -128,13 +141,19 @@ namespace CurvedUI
 		void Awake()
 		{
 			trackedController = GetComponent<SteamVR_TrackedObject>();
+            SteamVR_Events.RenderModelLoaded.AddListener(SteamVRModelLoaded);
 		}
 
 		void Update()
 		{
 			controllerIndex = (uint)trackedController.index;
-			device = SteamVR_Controller.Input((int)controllerIndex);
 
+            //this device is not tracked right now - it has no device index - skip it.
+            if (controllerIndex < 0 || controllerIndex >= Valve.VR.OpenVR.k_unMaxTrackedDeviceCount) return;
+
+            device = SteamVR_Controller.Input((int)controllerIndex);
+
+            //get axis inputfrom debice
 			Vector2 currentTriggerAxis = device.GetAxis(Valve.VR.EVRButtonId.k_EButton_SteamVR_Trigger);
 			Vector2 currentTouchpadAxis = device.GetAxis();
 
@@ -171,7 +190,7 @@ namespace CurvedUI
 			triggerAxis = new Vector2(currentTriggerAxis.x, currentTriggerAxis.y);
 
 			//Trigger
-			if (device.GetTouchDown(SteamVR_Controller.ButtonMask.Trigger))
+			if (device.GetPressDown(SteamVR_Controller.ButtonMask.Trigger))
 			{
 				OnTriggerClicked(SetButtonEvent(ref triggerPressed, true, currentTriggerAxis.x));
 				triggerDown = true;
@@ -180,7 +199,7 @@ namespace CurvedUI
 				triggerDown = false;
 			}
 
-			if (device.GetTouchUp(SteamVR_Controller.ButtonMask.Trigger))
+			if (device.GetPressUp(SteamVR_Controller.ButtonMask.Trigger))
 			{
 				OnTriggerUnclicked(SetButtonEvent(ref triggerPressed, false, 0f));
 				triggerUp = true;
@@ -251,12 +270,23 @@ namespace CurvedUI
 			return (vectorA.x.ToString("F" + axisFidelity) == vectorB.x.ToString("F" + axisFidelity) &&
 				vectorA.y.ToString("F" + axisFidelity) == vectorB.y.ToString("F" + axisFidelity));
 		}
-		#endregion
+
+        void SteamVRModelLoaded(SteamVR_RenderModel model, bool loaded)
+        {
+            //find if the controller is touch or vive by the type of its trackpad
+            Valve.VR.ETrackedPropertyError pError = new Valve.VR.ETrackedPropertyError();
+            int axisprop = Valve.VR.OpenVR.System.GetInt32TrackedDeviceProperty((uint)trackedController.index, Valve.VR.ETrackedDeviceProperty.Prop_Axis0Type_Int32, ref pError);
+            controllerType = axisprop == (int)Valve.VR.EVRControllerAxisType.k_eControllerAxis_Joystick ? Type.OCULUS_TOUCH : Type.VIVE;
+
+            //call evenets
+            if (ModelLoaded != null) ModelLoaded(this);
+        }
+        #endregion
 
 
 
-		#region PUBLIC
-		public void ToggleControllerVisible(bool on)
+            #region PUBLIC
+        public void ToggleControllerVisible(bool on)
 		{
 			foreach (MeshRenderer renderer in this.GetComponentsInChildren<MeshRenderer>())
 			{
@@ -285,11 +315,34 @@ namespace CurvedUI
 
 
 		#region SETTERS AND GETTERS
-		/// <summary>
-		/// Are the render components of the Controller enabled?
-		/// </summary>
-		/// <returns><c>true</c> if this instance is controller visible; otherwise, <c>false</c>.</returns>
-		public bool IsControllerVisible() { return controllerVisible; }
+        /// <summary>
+        /// Is this controller a Vive Controller, Oculush Touch, or other?
+        /// </summary>
+        public Type ControllerType {
+            get { return controllerType; }
+        }
+
+        /// <summary>
+        /// Returns the pointing direction, based on controller type. Oculus touch controllers point in a slighlty different way than Vive controllers.
+        /// </summary>
+        public Vector3 PointingDirection {
+            get { return controllerType == Type.OCULUS_TOUCH ? transform.localToWorldMatrix.MultiplyVector(Quaternion.Euler(oculusTouchPoitingRotationOffset) * Vector3.forward) : transform.forward; }
+
+        }
+
+        /// <summary>
+        /// Returns the pointing origin, based on controller type. Oculus touch controllers point in a slighlty different way than Vive controllers.
+        /// </summary>
+        public Vector3 PointingOrigin {
+            get { return transform.TransformPoint(controllerType == Type.OCULUS_TOUCH ? oculusTouchPoitingOriginOffset : Vector3.zero); }
+
+        }
+
+        /// <summary>
+        /// Are the render components of the Controller enabled?
+        /// </summary>
+        /// <returns><c>true</c> if this instance is controller visible; otherwise, <c>false</c>.</returns>
+        public bool IsControllerVisible() { return controllerVisible; }
 
 		/// <summary>
 		/// Has trigger been pressed down this frame?
@@ -306,7 +359,7 @@ namespace CurvedUI
 		/// <summary>
 		/// Is trigger pressed during this frame?
 		/// </summary>
-		public bool IsTriggerPressed { get { return triggerPressed; } }
+		public bool IsTriggerPressed { get { return triggerAxis.x > 0.5f; }  }
 		bool triggerPressed = false;
 
 		/// <summary>
@@ -375,5 +428,5 @@ namespace CurvedUI
 	}
 
 	public delegate void ViveInputEvent(object sender, ViveInputArgs e);
-
+    public delegate void ViveEvent(object sender);
 }

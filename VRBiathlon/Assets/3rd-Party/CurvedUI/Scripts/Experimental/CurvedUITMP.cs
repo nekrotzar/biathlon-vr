@@ -27,14 +27,16 @@ namespace CurvedUI
         Vector2 savedSize;
         Vector3 savedUp;
         Vector3 savedPos;
+        Vector3 savedCanvasSize;
+        List<CurvedUITMPSubmesh> subMeshes = new List<CurvedUITMPSubmesh>(); 
 
-
+        [HideInInspector]
         public bool Dirty = false; // set this to true to force mesh update.
 
         bool curvingRequired = false;
         bool tesselationRequired = false;
 
-        void DiscoverTMP()
+        void FindTMP()
         {
             if (this.GetComponent<TextMeshProUGUI>() != null)
             {
@@ -42,25 +44,53 @@ namespace CurvedUI
                 crvdVE = this.gameObject.GetComponent<CurvedUIVertexEffect>();
                 mySettings = GetComponentInParent<CurvedUISettings>();
                 transform.hasChanged = false;
-            }
 
+                FindSubmeshes();
+            }
+        }
+
+        void FindSubmeshes()
+        {
+            foreach (TMP_SubMeshUI sub in GetComponentsInChildren<TMP_SubMeshUI>())
+            {
+                CurvedUITMPSubmesh msh = sub.gameObject.AddComponentIfMissing<CurvedUITMPSubmesh>();
+                if(!subMeshes.Contains(msh))
+                    subMeshes.Add(msh);
+            }
         }
 
         void OnEnable()
         {
 
-            DiscoverTMP();
+            FindTMP();
 
             if (tmp != null)
+            {
                 tmp.RegisterDirtyMaterialCallback(TesselationRequiredCallback);
+                TMPro_EventManager.TEXT_CHANGED_EVENT.Add(TMPTextChangedCallback);
+
+
+            }
+
         }
 
         void OnDisable()
         {
             if (tmp != null)
+            {
                 tmp.UnregisterDirtyMaterialCallback(TesselationRequiredCallback);
+                TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(TMPTextChangedCallback);
+            }
+               
         }
 
+        void TMPTextChangedCallback(object obj)
+        {
+            if (obj != (object)tmp) return;
+
+            tesselationRequired = true;
+            //Debug.Log("tmp prop changed on "+this.gameObject.name, this.gameObject);
+        }
 
         void TesselationRequiredCallback()
         {
@@ -71,17 +101,19 @@ namespace CurvedUI
 
         void LateUpdate()
         {
-
+            
             //Edit Mesh on TextMeshPro component
             if (tmp != null)
             {
 
-                if (tmp.havePropertiesChanged)
+
+                if (savedSize != (transform as RectTransform).rect.size)
                 {
                     tesselationRequired = true;
-                    // Debug.Log("prop changed");
+                    //Debug.Log("size changed");
+
                 }
-                else if (savedSize != (transform as RectTransform).rect.size)
+                else if (savedCanvasSize != mySettings.transform.localScale)
                 {
                     tesselationRequired = true;
                     //Debug.Log("size changed");
@@ -103,29 +135,38 @@ namespace CurvedUI
 
                 if (Dirty || tesselationRequired || savedMesh == null || vh == null || (curvingRequired && !Application.isPlaying))
                 {
-
+                    //Modify the mesh
                     //Debug.Log("meshing TMP");
                     tmp.renderMode = TMPro.TextRenderFlags.Render;
                     tmp.ForceMeshUpdate();
                     vh = new VertexHelper(tmp.mesh);
                     crvdVE.TesselationRequired = true;
-
 #if UNITY_5_1
-				crvdVE.ModifyMesh(vh.GetUIVertexStream);
+				    crvdVE.ModifyMesh(vh.GetUIVertexStream);
 #else
                     crvdVE.ModifyMesh(vh);
 #endif
 
+
+                    //upload mesh to TMP Object
                     savedMesh = new Mesh();
                     vh.FillMesh(savedMesh);
-
                     tmp.renderMode = TMPro.TextRenderFlags.DontRender;
 
+                    //reset flags
                     tesselationRequired = false;
                     Dirty = false;
+
+                    //save current data
                     savedSize = (transform as RectTransform).rect.size;
                     savedUp = mySettings.transform.worldToLocalMatrix.MultiplyVector(transform.up);
                     savedPos = mySettings.transform.worldToLocalMatrix.MultiplyPoint3x4(transform.position);
+                    savedCanvasSize = mySettings.transform.localScale;
+
+                    //prompt submeshes to update
+                    FindSubmeshes();
+                    foreach (CurvedUITMPSubmesh mesh in subMeshes)
+                        mesh.UpdateSubmesh(true, false);
                 }
 
 
@@ -136,24 +177,33 @@ namespace CurvedUI
                     crvdVE.CurvingRequired = true;
 
 #if UNITY_5_1
-                crvdVE.ModifyMesh(vh.GetUIVertexStream);
+                    crvdVE.ModifyMesh(vh.GetUIVertexStream);
 #else
                     crvdVE.ModifyMesh(vh);
 #endif
-
+                    //fill mesh to VertexHelper
                     vh.FillMesh(savedMesh);
 
+                    //reset flags
                     curvingRequired = false;
+
+                    //save current data
                     savedSize = (transform as RectTransform).rect.size;
                     savedUp = mySettings.transform.worldToLocalMatrix.MultiplyVector(transform.up);
                     savedPos = mySettings.transform.worldToLocalMatrix.MultiplyPoint3x4(transform.position);
+
+                    //prompt submeshes to update
+                    foreach (CurvedUITMPSubmesh mesh in subMeshes)
+                        mesh.UpdateSubmesh(false, true);
+
+                   
                 }
 
+                //tmp.canvasRenderer.SetMesh(savedMesh);
                 tmp.canvasRenderer.SetMesh(savedMesh);
-
             }
             else {
-                DiscoverTMP();
+                FindTMP();
             }
         }
 

@@ -2,147 +2,57 @@
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
-#if CURVEDUI_TMP 
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+#if CURVEDUI_TMP
 using TMPro;
-#endif 
+#endif
+
+
+
 
 namespace CurvedUI
 {
-
-#if UNITY_5_1
-///Pre 5.2 Unity uses BaseVertexEffect class, works on quads.
-public partial class CurvedUIVertexEffect : BaseVertexEffect {
-
-	public override void ModifyVertices(List<UIVertex> verts) { 
-	    if (!this.IsActive())
-            return;
-
-        if (mySettings == null)  {
-            FindParentSettings();
-        }
-
-		if (mySettings == null || !mySettings.enabled)
-			return;
-
-        if (tesselationRequired || curvingRequired || savedCurvedVerts == null || savedCurvedVerts.Count == 0) {
-	         ModifyVerts(verts);
-             savedCurvedVerts = new List<UIVertex>(verts);
-             curvingRequired = false;
-        }
-
-        int initialCount = verts.Count;
-        verts.AddRange(savedCurvedVerts);  
-		verts.RemoveRange(0, initialCount);
-    }
-    
-    //pre 5.2 specific variables
-    List<UIVertex> savedCurvedVerts; 
-
-#else
-    ///Post 5.2 Unity uses BaseMeshEffect class, which works on triangles. 
-    ///We need to convert those to quads to be used with tesselation routine.
+	//Added to every UI object by CurvedUISettings.
+	//This is the script that subdivides and modifies the shape of the canvas object it is attached to.
+	//
+	//Requires Unity 5.3 or later
     public partial class CurvedUIVertexEffect : BaseMeshEffect
     {
-
-#if UNITY_5_2_0 || UNITY_5_2_1 // this method used different arguments pre unity 5.2.2
-    public override void ModifyMesh (Mesh mesh) {
-        VertexHelper vh = new VertexHelper(mesh);
-#else
-        public override void ModifyMesh(VertexHelper vh)
-        {
-#endif
-            if (!this.IsActive())
-                return;
-
-            if (mySettings == null)
-            {
-                FindParentSettings();
-            }
-
-            if (mySettings == null || !mySettings.enabled)
-                return;
-
-            //check for changes in text font material that would mean a retesselation in required to get fresh UV's
-            CheckTextFontMaterial();
-
-            //if curving or tesselation is required, we'll run the code to calculate vertices.
-            if (tesselationRequired || curvingRequired || SavedVertexHelper == null || SavedVertexHelper.currentVertCount == 0)
-            {
-                //Debug.Log("updating: tes:" + tesselationRequired + ", crv:" + curvingRequired, this.gameObject);
-                //Get vertices from the vertex stream. These come as triangles.
-                SavedVerteees = new List<UIVertex>();
-                vh.GetUIVertexStream(SavedVerteees);
-
-                // calls the old ModifyVertices which was used on pre 5.2. 
-                ModifyVerts(SavedVerteees);
-
-                //create or reuse our temp vertexhelper
-                if (SavedVertexHelper == null)
-                    SavedVertexHelper = new VertexHelper();
-                else {
-#if UNITY_5_2_0 || UNITY_5_2_1
-                SavedVertexHelper = new VertexHelper();
-#else
-                    SavedVertexHelper.Clear();
-#endif
-                }
-
-
-                //Save our tesselated and curved vertices to new vertex helper. They can come as quads or as triangles.
-                if (SavedVerteees.Count % 4 == 0)
-                {
-                    for (int i = 0; i < SavedVerteees.Count; i += 4)
-                    {
-                        SavedVertexHelper.AddUIVertexQuad(new UIVertex[]{
-                        SavedVerteees[i + 0], SavedVerteees[i + 1], SavedVerteees[i + 2], SavedVerteees[i + 3],
-                    });
-                    }
-                }
-                else {
-                    SavedVertexHelper.AddUIVertexTriangleStream(SavedVerteees);
-                }
-
-                //download proper vertex stream to a list we're going to save
-                SavedVertexHelper.GetUIVertexStream(SavedVerteees);
-                curvingRequired = false;
-            }
-
-            //copy the saved verts list to current VertexHelper
-#if UNITY_5_2_0 || UNITY_5_2_1
-        vh = new VertexHelper();
-        vh.AddUIVertexTriangleStream(SavedVerteees);
-        vh.FillMesh(mesh);
-#else
-            vh.Clear();
-            vh.AddUIVertexTriangleStream(SavedVerteees);
-#endif
-        }
-
-        //Post 5.2 specific variables
-        VertexHelper SavedVertexHelper; //used int 5.2 and later
-        List<UIVertex> SavedVerteees;
-#endif
-
-        #region SAVED VARIABLES
+	      
+#region VARIABLES
         //public settings
         [Tooltip("Check to skip tesselation pass on this object. CurvedUI will not create additional vertices to make this object have a smoother curve. Checking this can solve some issues if you create your own procedural mesh for this object. Default false.")]
         public bool DoNotTesselate = false;
 
-        //settings
-        bool tesselationRequired = true;
-        bool curvingRequired = true;
 
-        //saved variables and references
-        float angle = 90;
-        bool TransformMisaligned = false;
-        Canvas myCanvas;
-        CurvedUISettings mySettings;
-		
-        //internal
+		//stored references
+		Canvas myCanvas;
+		CurvedUISettings mySettings;
+		Graphic myGraphic;
+		Image myImage;
+		Text myText;
+		#if CURVEDUI_TMP
+		TextMeshProUGUI myTMP;
+		CurvedUITMPSubmesh myTMPSubMesh;
+		#endif
+
+
+        //variables we operate on
+		bool tesselationRequired = true;
+		bool curvingRequired = true;
+		float angle = 90;
+		bool TransformMisaligned = false;
         Matrix4x4 CanvasToWorld;
         Matrix4x4 CanvasToLocal;
         Matrix4x4 MyToWorld;
         Matrix4x4 MyToLocal;
+		VertexHelper SavedVertexHelper; 
+		List<UIVertex> SavedVerteees;
+		List<UIVertex> tesselatedVerts;
 
         [SerializeField][HideInInspector] Vector3 savedPos;
         [SerializeField][HideInInspector] Vector3 savedUp;
@@ -150,20 +60,13 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
         [SerializeField][HideInInspector] Color savedColor;
         [SerializeField][HideInInspector] Vector2 savedTextUV0;
         [SerializeField][HideInInspector] float savedFill;
+        #endregion
 
-        List<UIVertex> tesselatedVerts;
 
-        //my components references
-        Graphic myGraphic;
-        Image myImage;
-        Text myText;
-#if CURVEDUI_TMP
-        TextMeshProUGUI myTMP;
-#endif 
-#endregion
+
+
 
         #region LIFECYCLE
-
         protected override void OnEnable()
         {
             //find the settings object and its canvas.
@@ -184,15 +87,14 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
 				Font.textureRebuilt += FontTextureRebuiltCallback;
 			}
 
-			#if CURVEDUI_TMP
+#if CURVEDUI_TMP
 			myTMP = GetComponent<TextMeshProUGUI>();
-			#endif
+            myTMPSubMesh = GetComponent<CurvedUITMPSubmesh>();
+#endif
+        }
 
-		}
-
-		protected override void OnDisable()
+        protected override void OnDisable()
 		{
-
 			//If there is an update to the graphic, we cant reuse old vertices, so new tesselation will be required
 			if (myGraphic)
 				myGraphic.UnregisterDirtyMaterialCallback(TesselationRequiredCallback);
@@ -223,8 +125,9 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
 
         void Update()
         {
+
 #if CURVEDUI_TMP // CurvedUITMP handles updates for TextMeshPro objects.
-        if (myTMP) return;
+        if (myTMP || myTMPSubMesh) return;
 #endif
 
             //Find if the change in transform requires us to retesselate the UI
@@ -253,7 +156,6 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
                             savedFill = myImage.fillAmount;
                         }
                     }
-
                 }
             }
 
@@ -288,17 +190,85 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
                     curvingRequired = true;
                     //Debug.Log("crv req - tested up: " + testedUp);
                 }
-
             }
 
             ////if we find we need to make a change in the mesh, set vertices dirty to trigger BaseMeshEffect firing.
             if (myGraphic && (tesselationRequired || curvingRequired)) myGraphic.SetVerticesDirty();
         }
-        #endregion
+#endregion
 
 
-        #region CHECKS
 
+
+
+
+#region MESH EFFECT
+		//This is called by canvas after UI object's mesh is generated, but before it is rendered.
+		//Best place to modify the vertices of the object.
+		public override void ModifyMesh(VertexHelper vh)
+		{
+			if (!this.IsActive())
+				return;
+
+			if (mySettings == null) FindParentSettings();
+
+
+			if (mySettings == null || !mySettings.enabled)
+				return;
+
+			//check for changes in text font material that would mean a retesselation in required to get fresh UV's
+			CheckTextFontMaterial();
+
+			//if curving or tesselation is required, we'll run the code to calculate vertices.
+			if (tesselationRequired || curvingRequired || SavedVertexHelper == null || SavedVertexHelper.currentVertCount == 0)
+			{
+				//Debug.Log("updating: tes:" + tesselationRequired + ", crv:" + curvingRequired, this.gameObject);
+				//Get vertices from the vertex stream. These come as triangles.
+				SavedVerteees = new List<UIVertex>();
+				vh.GetUIVertexStream(SavedVerteees);
+
+				// calls the old ModifyVertices which was used on pre 5.2. 
+				ModifyVerts(SavedVerteees);
+
+				//create or reuse our temp vertexhelper
+				if (SavedVertexHelper == null)
+					SavedVertexHelper = new VertexHelper();
+				else {
+					SavedVertexHelper.Clear();
+				}
+
+
+				//Save our tesselated and curved vertices to new vertex helper. They can come as quads or as triangles.
+				if (SavedVerteees.Count % 4 == 0)
+				{
+					for (int i = 0; i < SavedVerteees.Count; i += 4)
+					{
+						SavedVertexHelper.AddUIVertexQuad(new UIVertex[]{
+							SavedVerteees[i + 0], SavedVerteees[i + 1], SavedVerteees[i + 2], SavedVerteees[i + 3],
+						});
+					}
+				}
+				else {
+					SavedVertexHelper.AddUIVertexTriangleStream(SavedVerteees);
+				}
+
+				//download proper vertex stream to a list we're going to save
+				SavedVertexHelper.GetUIVertexStream(SavedVerteees);
+				curvingRequired = false;
+			}
+
+			//copy the saved verts list to current VertexHelper
+			vh.Clear();
+			vh.AddUIVertexTriangleStream(SavedVerteees);
+		}
+#endregion 
+
+
+
+
+
+
+#region HELPERS
         void CheckTextFontMaterial()
         {
             //we check for a sudden change in text's fontMaterialTexture. This is a very hacky way, but the only one working reliably for now.
@@ -313,13 +283,13 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
             }
         }
 
-        void FindParentSettings()
+        public CurvedUISettings FindParentSettings(bool forceNew = false)
         {
-            if (mySettings == null)
+            if (mySettings == null || forceNew)
             {
                 mySettings = GetComponentInParent<CurvedUISettings>();
 
-                if (mySettings == null) return;
+                if (mySettings == null) return null;
                 else
                 {
                     myCanvas = mySettings.GetComponent<Canvas>();
@@ -327,13 +297,18 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
 
                     myImage = GetComponent<Image>();
                 }
-               
             }
+
+            return mySettings;
         }
-        #endregion
+#endregion
 
 
-        #region VERTEX OPERATIONS
+
+
+
+
+#region VERTEX OPERATIONS
         void ModifyVerts(List<UIVertex> verts)
         {
 
@@ -349,10 +324,7 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
             //so we don't have to retesselate if RectTransform's size has not changed.
             if (tesselationRequired || !Application.isPlaying)
             {
-
-
                 TesselateGeometry(verts);
-
 
                 // Save the tesselated vertices, so if the size does not change,
                 // we can use them when redrawing vertices.
@@ -396,9 +368,13 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
 
             }
         }
-        #endregion
+#endregion
 
-        #region CURVING
+
+
+
+
+#region CURVING
         /// <summary>
         /// Map position of a vertex to a section of a circle. calculated in canvas's local space
         /// </summary>
@@ -474,9 +450,13 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
 
             return input;
         }
-        #endregion
+#endregion
 
-        #region TESSELATION
+
+
+
+
+#region TESSELATION
         void TesselateGeometry(List<UIVertex> verts)
         {
 
@@ -485,13 +465,13 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
             //find if we are aligned with canvas main axis
             TransformMisaligned = !(savedUp.AlmostEqual(Vector3.up.normalized));
 
-#if !UNITY_5_1 /// Convert the list from triangles to quads to be used by the tesselation
+			// Convert the list from triangles to quads to be used by the tesselation
             TrisToQuads(verts);
-#endif
+
 
             //do not tesselate text verts. Text usually is small and has plenty of verts already.
 #if CURVEDUI_TMP
-        if (myText == null && myTMP == null)  {
+			if (myText == null && myTMP == null && !DoNotTesselate)  {
 #else
             if (myText == null && !DoNotTesselate)
             {
@@ -504,7 +484,6 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
                 // Remove old quads
                 verts.RemoveRange(0, startingVertexCount);
             }
-
         }
 
 
@@ -570,6 +549,9 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
             }
         }
 
+		/// <summary>
+		/// Converts a List of triangle mesh vertices to a list of quad mesh vertices
+		/// </summary>
         void TrisToQuads(List<UIVertex> verts)
         {
 
@@ -591,7 +573,13 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
         }
 
 
-
+		/// <summary>
+		/// Subdivides a quad into 4 quads.
+		/// </summary>
+		/// <returns>The quad.</returns>
+		/// <param name="quad">Quad.</param>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
         UIVertex TesselateQuad(UIVertex[] quad, float x, float y)
         {
 
@@ -630,9 +618,12 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
 
             return ret;
         }
-        #endregion
+#endregion
 
-        #region PUBLIC
+
+
+
+#region PUBLIC
 
         /// <summary>
         /// Force Mesh to be rebuild during canvas' next update loop.
@@ -660,113 +651,8 @@ public partial class CurvedUIVertexEffect : BaseVertexEffect {
             set { curvingRequired = value; }
         }
 
-        #endregion
-    }
+#endregion
 
 
-    #region EXTENSION METHODS
-    public static class CalculationMethods
-    {
-
-        //Direct Vector3 comparison can produce wrong results sometimes due to float inacuracies.
-        //This is an aproximate comparison.
-        public static bool AlmostEqual(this Vector3 a, Vector3 b, double accuracy = 0.01)
-        {
-            return Vector3.SqrMagnitude(a - b) < accuracy; 
-        }
-
-        public static float Remap(this float value, float from1, float to1, float from2, float to2)
-        {
-            return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
-        }
-
-
-        public static float Remap(this int value, float from1, float to1, float from2, float to2)
-        {
-            return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
-
-        }
-
-        public static double Remap(this double value, double from1, double to1, double from2, double to2)
-        {
-            return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
-        }
-
-
-
-        public static float Clamp(this float value, float min, float max)
-        {
-            return Mathf.Clamp(value, min, max);
-        }
-
-        public static float Clamp(this int value, int min, int max)
-        {
-            return Mathf.Clamp(value, min, max);
-        }
-
-
-        /// <summary>
-        /// Returns value rounded to nearest integer (both up and down).
-        /// </summary>
-        /// <returns>The int.</returns>
-        /// <param name="value">Value.</param>
-        public static int ToInt(this float value)
-        {
-            return Mathf.RoundToInt(value);
-        }
-
-        public static int FloorToInt(this float value)
-        {
-            return Mathf.FloorToInt(value);
-        }
-
-        public static int CeilToInt(this float value)
-        {
-            return Mathf.FloorToInt(value);
-        }
-
-        public static Vector3 ModifyX(this Vector3 trans, float newVal)
-        {
-            trans = new Vector3(newVal, trans.y, trans.z);
-            return trans;
-        }
-
-        public static Vector3 ModifyY(this Vector3 trans, float newVal)
-        {
-            trans = new Vector3(trans.x, newVal, trans.z);
-            return trans;
-        }
-
-        public static Vector3 ModifyZ(this Vector3 trans, float newVal)
-        {
-            trans = new Vector3(trans.x, trans.y, newVal);
-            return trans;
-        }
-
-        public static Vector2 ModifyVectorX(this Vector2 trans, float newVal)
-        {
-            trans = new Vector3(newVal, trans.y);
-            return trans;
-        }
-
-        public static Vector2 ModifyVectorY(this Vector2 trans, float newVal)
-        {
-            trans = new Vector3(trans.x, newVal);
-            return trans;
-        }
-
-
-        /// <summary>
-        /// Resets transform's local position, rotation and scale
-        /// </summary>
-        /// <param name="trans">Trans.</param>
-        public static void ResetTransform(this Transform trans)
-        {
-            trans.localPosition = Vector3.zero;
-            trans.localRotation = new Quaternion(0, 0, 0, 0);
-            trans.localScale = Vector3.one;
-        }
-
-        #endregion
-    }
-}
+    }// end of class
+} //end of namespace

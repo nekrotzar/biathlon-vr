@@ -4,14 +4,12 @@ using UnityEngine;
 
 public class ShootingTrigger : MonoBehaviour {
 
-    public StagesManager stM;
-
     private void OnTriggerEnter(Collider other)
     {
         if (other.tag == "Player")
         {
-            stM.raceMode = false;
-            stM.shootMode = true;
+            GameManager.instance.raceMode = false;
+            GameManager.instance.shootMode = true;
         }
     }
 }

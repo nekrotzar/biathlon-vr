@@ -12,13 +12,19 @@ namespace CurvedUI
     /// </summary>
     public class CurvedUIInputFieldCaret : MonoBehaviour, ISelectHandler, IDeselectHandler
     {
+        //references
         InputField myField;
         RectTransform myCaret;
         Color origCaretColor;
         Color origSelectionColor;
 
+
+        //variables
         bool selected = false;
         bool selectingText = false;
+
+        //settings
+        int lastCharDist = 2;
 
 
         void Awake()
@@ -84,7 +90,9 @@ namespace CurvedUI
             go.transform.SetParent(this.transform);
             go.transform.localScale = Vector3.one;
             (go.transform as RectTransform).anchoredPosition3D = Vector3.zero;
-            (go.transform as RectTransform).pivot = new Vector2(0, 0.5f);
+            //(go.transform as RectTransform).pivot = new Vector2(0, 0.5f);
+            (go.transform as RectTransform).pivot = new Vector2(0, 1.0f);
+
             go.GetComponent<Image>().color = myField.caretColor;
 
             myCaret = go.transform as RectTransform;
@@ -111,27 +119,31 @@ namespace CurvedUI
 
             //Debug.Log("caret:" + myField.caretPosition + " / focus:"+ myField.selectionFocusPosition + " / anchor:" + myField.selectionAnchorPosition  + " / charc:" + myField.textComponent.cachedTextGenerator.characterCount + " / charvis:" + myField.textComponent.cachedTextGenerator.characterCountVisible);
             Vector2 newCaretPos = GetLocalPositionInText(myField.caretPosition);
-            RectTransform originalCaret = (RectTransform)myField.transform.FindChild(myField.name + " Input Caret");
+            //RectTransform originalCaret = (RectTransform)myField.transform.FindChild(myField.name + " Input Caret");
 
             if (myField.selectionFocusPosition != myField.selectionAnchorPosition) // user is selecting text is those two are not equal.
             {
                 selectingText = true;
 
-                float selectionSize = GetLocalPositionInText(myField.selectionAnchorPosition).x - GetLocalPositionInText(myField.selectionFocusPosition).x;
-                newCaretPos = selectionSize < 0 ? GetLocalPositionInText(myField.selectionAnchorPosition) : GetLocalPositionInText(myField.selectionFocusPosition);
-                selectionSize = Mathf.Abs(selectionSize);
+                Vector2 selectionSize = new Vector2(
+                    GetLocalPositionInText(myField.selectionAnchorPosition).x - GetLocalPositionInText(myField.selectionFocusPosition).x,
+                    GetLocalPositionInText(myField.selectionAnchorPosition).y - GetLocalPositionInText(myField.selectionFocusPosition).y
+                    );
+                newCaretPos = selectionSize.x < 0 ? GetLocalPositionInText(myField.selectionAnchorPosition) : GetLocalPositionInText(myField.selectionFocusPosition);
+                selectionSize = new Vector2(Mathf.Abs(selectionSize.x), Mathf.Abs(selectionSize.y) + myField.textComponent.fontSize);
 
-                myCaret.sizeDelta = new Vector2(selectionSize, originalCaret == null ? 10 : originalCaret.rect.height);
-                myCaret.anchoredPosition = newCaretPos.ModifyVectorY(0);
+
+                myCaret.sizeDelta = new Vector2(selectionSize.x, selectionSize.y);
+                myCaret.anchoredPosition = newCaretPos;
                 myCaret.GetComponent<Image>().color = origSelectionColor;
-
             }
             else { // user is not selecting text, just update the caret position.
 
                 selectingText = false;
 
-                myCaret.sizeDelta = new Vector2(myField.caretWidth, originalCaret == null ? 10 : originalCaret.rect.height);
-                myCaret.anchoredPosition = newCaretPos.ModifyVectorY(0);
+                //myCaret.sizeDelta = new Vector2(myField.caretWidth, originalCaret == null ? 10 : originalCaret.rect.height);
+                myCaret.sizeDelta = new Vector2(myField.caretWidth, myField.textComponent.fontSize);
+                myCaret.anchoredPosition = newCaretPos;
                 myCaret.GetComponent<Image>().color = origCaretColor;
 
             }
@@ -151,10 +163,11 @@ namespace CurvedUI
                 if (charNo > gen.characterCount - 1) //do not go over the text length.
                     charNo = gen.characterCount - 1;
 
+
                 if (charNo > 0)
                 {
                     UICharInfo charInfo = gen.characters[charNo - 1];
-                    float x = (charInfo.cursorPos.x + charInfo.charWidth) / myField.textComponent.pixelsPerUnit;
+                    float x = (charInfo.cursorPos.x + charInfo.charWidth) / myField.textComponent.pixelsPerUnit + lastCharDist;
                     float y = (charInfo.cursorPos.y) / myField.textComponent.pixelsPerUnit;
                     return new Vector2(x, y);
                 }
