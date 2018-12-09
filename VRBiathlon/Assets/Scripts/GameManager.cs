@@ -11,7 +11,9 @@ public class GameManager : MonoBehaviour {
     public GameObject Player;
     public GameObject startPoint;
     public GameObject shootPoint;
+    public Image dot;
     
+
     public bool startMode;
     public bool raceMode;
     public bool shootMode;
@@ -37,6 +39,8 @@ public class GameManager : MonoBehaviour {
         startMode = true;
         raceMode = false;
         shootMode = false;
+
+        dot.enabled = true;
 
 
         scoreManager = GetComponent<ScoreManager>();
@@ -84,6 +88,8 @@ public class GameManager : MonoBehaviour {
     {
         canWalk.enabled = true;
         scoreManager.IsRacing(true);
+        dot.enabled = true;
+       
     }
 
     public void StartShooting()
@@ -91,6 +97,8 @@ public class GameManager : MonoBehaviour {
         this.Player.transform.position = shootPoint.transform.position;
         canShoot.enabled = true;
         canWalk.enabled = false;
+        
+        
     }
 
     public void Restart()

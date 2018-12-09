@@ -6,6 +6,8 @@ public class VRLookGrab : MonoBehaviour
     public Transform CircleLoading;
     public Transform VRHand;
     public Rigidbody Riffle;
+    public Image dot;
+    public Image crosshair;
     private bool _holding;
     // Use this for initialization
     void Start()
@@ -41,6 +43,8 @@ public class VRLookGrab : MonoBehaviour
         Riffle.transform.localRotation = VRHand.transform.rotation;
         Riffle.transform.parent = VRHand.transform;
         Riffle.transform.localPosition = new Vector3(-8f, -4f, 4f);
+        dot.enabled = false;
+        crosshair.enabled = true;
 
     }
 }
