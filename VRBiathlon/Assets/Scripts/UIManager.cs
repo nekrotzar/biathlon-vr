@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour {
 
+    public GameManager GameManager;
+
     [Header("Main menu buttons")]
     public Button eventModeBtn;
     public Button skiModeBtn;
@@ -12,7 +14,6 @@ public class UIManager : MonoBehaviour {
 
     public GameObject mainMenu;
     public CanvasGroup menuCG;
-
 
     private bool optionPressed;
 
@@ -36,27 +37,26 @@ public class UIManager : MonoBehaviour {
         {
             mainMenu.SetActive(false);
         }
-
     }
 
     void StartEventClick()
     {
         optionPressed = true;
-        GameManager.instance.StartEvent();
-        Debug.Log("Star game");
+        GameManager.StartEvent();
+        Debug.Log("Start game");
     }
 
     void StartSkiClick()
     {
         optionPressed = true;
-        GameManager.instance.StartSki();
-        Debug.Log("Star ski");
+        GameManager.StartSki();
+        Debug.Log("Start ski");
     }
 
     void StartShootClick()
     {
         optionPressed = true;
-        GameManager.instance.StartShooting();
-        Debug.Log("Star shooting here");
+        GameManager.StartShooting();
+        Debug.Log("Start shooting here");
     }
 }

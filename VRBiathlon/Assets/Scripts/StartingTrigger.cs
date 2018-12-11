@@ -4,12 +4,17 @@ using UnityEngine;
 
 public class StartingTrigger : MonoBehaviour {
 
+    public GameManager GameManager;
+
     private void OnTriggerEnter(Collider other)
     {
         if(other.tag == "Player")
         {
-            GameManager.instance.startMode = false;
-            GameManager.instance.raceMode = true;            
+            Debug.Log("Player passed");
+            if (!GameManager.skiMode)
+            {                
+                GameManager.scoreManager.IsRacing(true);
+            }             
         }
     }
 }

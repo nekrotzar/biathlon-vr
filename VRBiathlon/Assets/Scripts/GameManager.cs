@@ -5,9 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour {
 
-    // A public static reference to itself allows all other objects in the game access to it. 
-    public static GameManager instance;
-
     public GameObject Player;
     public GameObject startPoint;
     public GameObject shootPoint;
@@ -18,36 +15,28 @@ public class GameManager : MonoBehaviour {
     public bool startMode;
     public bool raceMode;
     public bool shootMode;
+    public bool skiMode;
 
     private VRLookWalk canWalk;
     private VRShoot canShoot;
     private VRLookGrab canGrab;
 
-    private ScoreManager scoreManager;
+    public ScoreManager scoreManager;
 
-    void Awake()
-    {
-        if (instance == null)
-            instance = this;
-        else
-            Destroy(gameObject);
-
-        //DontDestroyOnLoad(gameObject);
-    }
 
     // Use this for initialization
     void Start () {
         startMode = true;
         raceMode = false;
+        skiMode = false;
         shootMode = false;
 
         raceUI.SetActive(false);
 
         dot.enabled = true;
-
-
+        
         scoreManager = GetComponent<ScoreManager>();
-   
+
         canWalk = Player.GetComponent<VRLookWalk>();
         canWalk.enabled = false;
         
@@ -59,16 +48,24 @@ public class GameManager : MonoBehaviour {
     }
 	
 	// Update is called once per frame
-	void Update () {    
-        if(!startMode && raceMode && !shootMode)
+	void Update () {
+        if(raceMode)
         {
-            startPoint.SetActive(false);
-            scoreManager.IsRacing(true);
+            startPoint.SetActive(true);
+            shootPoint.SetActive(true);
+            canWalk.enabled = true;
         }
-
-        if(!startMode && !raceMode && shootMode)
+        if(skiMode)
         {
+            startMode = false;
+            startPoint.SetActive(false);
             shootPoint.SetActive(false);
+            scoreManager.IsRacing(false);
+            canWalk.enabled = true;
+        }
+        if(shootMode)
+        {            
+            shootPoint.SetActive(true);
             scoreManager.IsRacing(false);
             canGrab.enabled = true;
             canShoot.enabled = true;
@@ -78,32 +75,32 @@ public class GameManager : MonoBehaviour {
 
         if (Input.GetButtonDown("Cancel"))
         {
+            startMode = true;
             Restart();
         }
 	}
 
     public void StartEvent()
     {
+        startMode = false;
         Debug.Log("The full run has started!");
-        canWalk.enabled = true;
+        raceMode = true;
+        skiMode = false;
         raceUI.SetActive(true);
     }
 
     public void StartSki()
     {
-        canWalk.enabled = true;
-        scoreManager.IsRacing(true);
-        dot.enabled = true;
-       
+        startMode = false;
+        raceMode = false;
+        skiMode = true;
+        dot.enabled = true;       
     }
 
     public void StartShooting()
     {
-        this.Player.transform.position = shootPoint.transform.position;
-        canShoot.enabled = true;
-        canWalk.enabled = false;
-        
-        
+        startMode = false;
+        Player.transform.position = shootPoint.transform.position;    
     }
 
     public void Restart()

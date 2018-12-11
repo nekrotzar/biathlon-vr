@@ -45,6 +45,5 @@ public class VRLookGrab : MonoBehaviour
         Riffle.transform.localPosition = new Vector3(-8f, -4f, 4f);
         dot.enabled = false;
         crosshair.enabled = true;
-
     }
 }

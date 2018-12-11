@@ -4,12 +4,19 @@ using UnityEngine;
 
 public class ShootingTrigger : MonoBehaviour {
 
+    public GameManager GameManager;
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.tag == "Player")
         {
-            GameManager.instance.raceMode = false;
-            GameManager.instance.shootMode = true;
+            GameManager.raceMode = false;
+            GameManager.startMode = false;
+            if(!GameManager.skiMode)
+            {
+                GameManager.shootMode = true;
+            }
+            
         }
     }
 }
