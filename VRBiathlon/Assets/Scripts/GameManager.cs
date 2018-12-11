@@ -12,7 +12,8 @@ public class GameManager : MonoBehaviour {
     public GameObject startPoint;
     public GameObject shootPoint;
     public Image dot;
-    
+
+    public GameObject raceUI;
 
     public bool startMode;
     public bool raceMode;
@@ -39,6 +40,8 @@ public class GameManager : MonoBehaviour {
         startMode = true;
         raceMode = false;
         shootMode = false;
+
+        raceUI.SetActive(false);
 
         dot.enabled = true;
 
@@ -81,7 +84,9 @@ public class GameManager : MonoBehaviour {
 
     public void StartEvent()
     {
+        Debug.Log("The full run has started!");
         canWalk.enabled = true;
+        raceUI.SetActive(true);
     }
 
     public void StartSki()
