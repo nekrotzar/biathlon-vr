@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 20b49f791c709f84bb29f76f805b3f12, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -37,8 +37,8 @@ RenderSettings:
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
-  m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_Sun: {fileID: 1158294068}
+  m_IndirectSpecularColor: {r: 0.3312966, g: 0.33538368, b: 0.3292433, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -89,7 +89,8 @@ LightmapSettings:
     m_PVRFilteringAtrousPositionSigmaIndirect: 2
     m_PVRFilteringAtrousPositionSigmaAO: 1
     m_ShowResolutionOverlay: 1
-  m_LightingDataAsset: {fileID: 0}
+  m_LightingDataAsset: {fileID: 112000002, guid: 51596ac4dc4e3d9429275b6c930a5c89,
+    type: 2}
   m_UseShadowmask: 1
 --- !u!196 &4
 NavMeshSettings:
@@ -1874,7 +1875,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 174373831}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.213, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1317585672}
@@ -8079,7 +8080,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 472128431}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41e9a622aff6541c9a1cfbd99235ffea, type: 3}
   m_Name: 
@@ -15700,7 +15701,7 @@ Transform:
   m_GameObject: {fileID: 913453087}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 2, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
@@ -15766,8 +15767,8 @@ AudioSource:
   SpatializePostEffects: 0
   Priority: 128
   DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 256.07562
+  MinDistance: 2.4080086
+  MaxDistance: 106.87982
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -16505,7 +16506,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 980442702}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41e9a622aff6541c9a1cfbd99235ffea, type: 3}
   m_Name: 
@@ -17679,13 +17680,13 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1158294067}
-  m_LocalRotation: {x: -0.09486063, y: -0.8983933, z: 0.35560656, w: -0.23965593}
-  m_LocalPosition: {x: 45.54361, y: 74.10712, z: 141.78174}
+  m_LocalRotation: {x: 0.026978219, y: -0.8913885, z: 0.25509152, w: 0.37366712}
+  m_LocalPosition: {x: 308, y: 142, z: 326}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 5
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 28.355001, y: -132.154, z: 9.3220005}
 --- !u!1 &1186428255
 GameObject:
   m_ObjectHideFlags: 0
@@ -23174,8 +23175,6 @@ MonoBehaviour:
   speed: 5
   lateralSpeed: 0.1
   maxSpeed: 12
-  timeZeroToMax: 0.02
-  timeMaxToZero: 5
   moveforward: 0
   movebackward: 0
   pushRate: 1
