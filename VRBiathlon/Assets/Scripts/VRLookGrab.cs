@@ -9,9 +9,11 @@ public class VRLookGrab : MonoBehaviour
     public Image dot;
     public Image crosshair;
     private bool _holding;
+    private bool _canGrab;
     // Use this for initialization
     void Start()
     {
+        _canGrab = false;
         timer = 0;
         _holding = false;
         CircleLoading.GetComponent<Image>().fillAmount = timer;
@@ -20,14 +22,17 @@ public class VRLookGrab : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!_holding)
+        if (_canGrab)
         {
-            timer += Time.deltaTime;
-            CircleLoading.GetComponent<Image>().fillAmount = timer / 2;
-            if (timer >= 2f)
+            if (!_holding)
             {
-                _holding = true;
-                grabObj();
+                timer += Time.deltaTime;
+                CircleLoading.GetComponent<Image>().fillAmount = timer / 2;
+                if (timer >= 2f)
+                {
+                    _holding = true;
+                    grabObj();
+                }
             }
         }
     }
@@ -37,6 +42,12 @@ public class VRLookGrab : MonoBehaviour
         timer = 0f;
         CircleLoading.GetComponent<Image>().fillAmount = timer;
     }
+
+    public void GrabIsActive(bool state)
+    {
+        _canGrab = state;
+    }
+
 
     public void grabObj()
     {

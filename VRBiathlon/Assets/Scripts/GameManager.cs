@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour {
     public GameObject Player;
     public GameObject startPoint;
     public GameObject shootPoint;
+    public GameObject Rifle;
     public Image dot;
 
     public GameObject raceUI;
@@ -43,8 +44,7 @@ public class GameManager : MonoBehaviour {
         canShoot = Player.GetComponent<VRShoot>();
         canShoot.enabled = false;
 
-        canGrab = Player.GetComponent<VRLookGrab>();
-        canGrab.enabled = false;        
+        canGrab = Rifle.GetComponent<VRLookGrab>();
     }
 	
 	// Update is called once per frame
@@ -60,14 +60,14 @@ public class GameManager : MonoBehaviour {
             startMode = false;
             startPoint.SetActive(false);
             shootPoint.SetActive(false);
+            canGrab.GrabIsActive(false);
             scoreManager.IsRacing(false);
             canWalk.enabled = true;
         }
         if(shootMode)
-        {            
-            shootPoint.SetActive(true);
+        {
             scoreManager.IsRacing(false);
-            canGrab.enabled = true;
+            canGrab.GrabIsActive(true);
             canShoot.enabled = true;
             canWalk.enabled = false;
             Player.GetComponent<Rigidbody>().drag = 2;

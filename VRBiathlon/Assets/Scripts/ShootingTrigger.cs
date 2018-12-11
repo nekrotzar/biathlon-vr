@@ -16,7 +16,6 @@ public class ShootingTrigger : MonoBehaviour {
             {
                 GameManager.shootMode = true;
             }
-            
         }
     }
 }
