@@ -2379,7 +2379,7 @@ GameObject:
   - component: {fileID: 275384559}
   - component: {fileID: 275384561}
   - component: {fileID: 275384560}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: m1_mesh_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16105,7 +16105,7 @@ GameObject:
   - component: {fileID: 796712700}
   - component: {fileID: 796712702}
   - component: {fileID: 796712701}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: m1_mesh_05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17140,7 +17140,7 @@ TerrainCollider:
   m_Material: {fileID: 13400000, guid: 046790121a5b23c49a0d7e1b6c9490de, type: 2}
   m_Enabled: 1
   m_TerrainData: {fileID: 15600000, guid: 682736c484c6f7b448ed80cfacdbca1c, type: 2}
-  m_EnableTreeColliders: 1
+  m_EnableTreeColliders: 0
 --- !u!218 &913453090
 Terrain:
   m_ObjectHideFlags: 0
@@ -17396,8 +17396,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 936962761}
-  - component: {fileID: 936962762}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: M1_Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17424,21 +17423,6 @@ Transform:
   m_Father: {fileID: 1721883913}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &936962762
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 64001425411062828, guid: a2a1e0cb3c7a1954a8c8db5b1d3e8759,
-    type: 2}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 936962760}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 1
-  m_CookingOptions: 14
-  m_SkinWidth: 0.01
-  m_Mesh: {fileID: 4300002, guid: 3f0c4985582e9bf449833a3aefe24fa1, type: 3}
 --- !u!1 &958608104
 GameObject:
   m_ObjectHideFlags: 0
@@ -17792,7 +17776,7 @@ MonoBehaviour:
   shape: 0
   quality: 1
   interactable: 1
-  blocksRaycasts: 1
+  blocksRaycasts: 0
   raycastMyLayerOnly: 0
   forceUseBoxCollider: 1
   angle: 90
@@ -18994,7 +18978,7 @@ GameObject:
   - component: {fileID: 761564038}
   - component: {fileID: 761564040}
   - component: {fileID: 1191195423}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: MuzzleFlashEffect
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20329,7 +20313,7 @@ GameObject:
   - component: {fileID: 1308421447}
   - component: {fileID: 1308421449}
   - component: {fileID: 1308421448}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: m1_mesh_06
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21514,7 +21498,7 @@ GameObject:
   - component: {fileID: 1504218663}
   - component: {fileID: 1504218665}
   - component: {fileID: 1504218664}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: m1_mesh_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22102,7 +22086,7 @@ GameObject:
   - component: {fileID: 1539278175}
   - component: {fileID: 1539278177}
   - component: {fileID: 1539278176}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: m1_mesh_04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22590,9 +22574,10 @@ GameObject:
   - component: {fileID: 1648858595}
   - component: {fileID: 1648858594}
   - component: {fileID: 1648858592}
-  m_Layer: 0
+  - component: {fileID: 1648858596}
+  m_Layer: 11
   m_Name: Rifle
-  m_TagString: Untagged
+  m_TagString: Rifle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -22786,6 +22771,20 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!64 &1648858596
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1648858591}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Convex: 1
+  m_CookingOptions: 14
+  m_SkinWidth: 0.01
+  m_Mesh: {fileID: 4300002, guid: 3f0c4985582e9bf449833a3aefe24fa1, type: 3}
 --- !u!1 &1649412671
 GameObject:
   m_ObjectHideFlags: 0
@@ -25148,7 +25147,7 @@ GameObject:
   - component: {fileID: 1930742752}
   - component: {fileID: 1930742754}
   - component: {fileID: 1930742753}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: m1_mesh_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}

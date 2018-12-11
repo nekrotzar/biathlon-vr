@@ -57,4 +57,9 @@ public class VRLookGrab : MonoBehaviour
         dot.enabled = false;
         crosshair.enabled = true;
     }
+
+    public bool IsHolding()
+    {
+        return _holding;
+    }
 }

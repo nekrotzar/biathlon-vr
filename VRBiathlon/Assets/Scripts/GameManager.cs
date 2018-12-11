@@ -68,9 +68,13 @@ public class GameManager : MonoBehaviour {
         {
             scoreManager.IsRacing(false);
             canGrab.GrabIsActive(true);
-            canShoot.enabled = true;
             canWalk.enabled = false;
             Player.GetComponent<Rigidbody>().drag = 2;
+            
+            if (canGrab.IsHolding())
+            {
+                canShoot.enabled = true;
+            }
         }
 
         if (Input.GetButtonDown("Cancel"))

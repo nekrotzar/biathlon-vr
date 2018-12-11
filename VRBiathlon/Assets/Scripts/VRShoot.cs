@@ -17,14 +17,6 @@ public class VRShoot : MonoBehaviour {
 
     public ScoreManager _scM;
 
-    // Check for a Target
-    LayerMask targetMask;
-
-    private void Awake()
-    {
-        targetMask = LayerMask.GetMask("Target");
-    }
-
     void Start()
     {
         _missedShot = false;
@@ -47,7 +39,7 @@ public class VRShoot : MonoBehaviour {
 
         flash.Play();
 
-        if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, range, targetMask))
+        if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, range))
         {
             if(hit.transform.tag == "Target")
             {
