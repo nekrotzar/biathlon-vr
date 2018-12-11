@@ -8268,7 +8268,7 @@ MonoBehaviour:
   savedUp: {x: 0, y: 1, z: 0}
   savedRectSize: {x: 250, y: 60.000004}
   savedColor: {r: 1, g: 1, b: 1, a: 1}
-  savedTextUV0: {x: 0.15234375, y: 0.60546875}
+  savedTextUV0: {x: 0.5, y: 0.609375}
   savedFill: 0
 --- !u!114 &390559726
 MonoBehaviour:
@@ -19158,7 +19158,7 @@ MonoBehaviour:
   savedUp: {x: 0, y: 1, z: 0}
   savedRectSize: {x: 320, y: 60.000004}
   savedColor: {r: 1, g: 1, b: 1, a: 1}
-  savedTextUV0: {x: 0.5, y: 0.5}
+  savedTextUV0: {x: 0.23828125, y: 0.609375}
   savedFill: 0
 --- !u!114 &1212500237
 MonoBehaviour:
@@ -22448,9 +22448,9 @@ Canvas:
   m_GameObject: {fileID: 1570269133}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
+  m_RenderMode: 1
+  m_Camera: {fileID: 174373833}
+  m_PlaneDistance: 0.8
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
@@ -22656,7 +22656,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 126
   m_CollisionDetection: 0
 --- !u!114 &1648858594
 MonoBehaviour:
@@ -25076,7 +25076,7 @@ MonoBehaviour:
   savedUp: {x: 0, y: 1, z: 0}
   savedRectSize: {x: 250, y: 60.000004}
   savedColor: {r: 1, g: 1, b: 1, a: 1}
-  savedTextUV0: {x: 0.296875, y: 0.7421875}
+  savedTextUV0: {x: 0.28125, y: 0.5}
   savedFill: 0
 --- !u!114 &1924839463
 MonoBehaviour:
@@ -25542,7 +25542,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -26006,7 +26006,7 @@ MonoBehaviour:
   savedUp: {x: 0, y: 1, z: 0}
   savedRectSize: {x: 250, y: 60.000004}
   savedColor: {r: 1, g: 1, b: 1, a: 1}
-  savedTextUV0: {x: 0.5, y: 0.609375}
+  savedTextUV0: {x: 0.5, y: 0.5}
   savedFill: 0
 --- !u!114 &1992875556
 MonoBehaviour:
@@ -26470,7 +26470,7 @@ MonoBehaviour:
   savedUp: {x: 0, y: 1, z: 0}
   savedRectSize: {x: 250, y: 60.000004}
   savedColor: {r: 1, g: 1, b: 1, a: 1}
-  savedTextUV0: {x: 0.28125, y: 0.5}
+  savedTextUV0: {x: 0.0859375, y: 0.8203125}
   savedFill: 0
 --- !u!114 &2025521401
 MonoBehaviour:
