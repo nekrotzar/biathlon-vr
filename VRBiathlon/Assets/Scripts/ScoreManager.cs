@@ -71,6 +71,8 @@ public class ScoreManager : MonoBehaviour
     public void AmmoLeft (int x)
     {
         _ammoleft = x;
+        ammoText.text = "Ammo:" + _ammoleft;
+
     }
 
     public void isFinal(bool state)
