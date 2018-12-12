@@ -50,7 +50,7 @@ public class GameManager : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         if(raceMode)
-        {
+        { 
             startPoint.SetActive(true);
             shootPoint.SetActive(true);
             canWalk.enabled = true;
@@ -67,6 +67,8 @@ public class GameManager : MonoBehaviour {
         if(shootMode)
         {
             scoreManager.IsRacing(false);
+            scoreManager.AmmoLeft(canShoot.ammo);
+            scoreManager.IsShooting(true);
             canGrab.GrabIsActive(true);
             canWalk.enabled = false;
             Player.GetComponent<Rigidbody>().drag = 2;
@@ -74,6 +76,14 @@ public class GameManager : MonoBehaviour {
             if (canGrab.IsHolding())
             {
                 canShoot.enabled = true;
+            }
+
+            if(canShoot.ammo < 1)
+            {
+                scoreManager.isFinal(true);
+                scoreManager.IsShooting(false);
+                canGrab.GrabIsActive(false);
+                canShoot.enabled = false;
             }
         }
 
@@ -86,6 +96,7 @@ public class GameManager : MonoBehaviour {
 
     public void StartEvent()
     {
+        canShoot.ammo = 5;
         startMode = false;
         Debug.Log("The full run has started!");
         raceMode = true;
@@ -103,6 +114,7 @@ public class GameManager : MonoBehaviour {
 
     public void StartShooting()
     {
+        canShoot.ammo = 999;
         startMode = false;
         Player.transform.position = shootPoint.transform.position;    
     }

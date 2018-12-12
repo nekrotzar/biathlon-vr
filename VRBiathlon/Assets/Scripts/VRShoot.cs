@@ -6,6 +6,7 @@ public class VRShoot : MonoBehaviour {
     public float shotRate;
     private float _nextShot = 1f;
     public bool _missedShot;
+    public int ammo;
 
     public Camera mainCamera;
     public AudioClip SoundClip;
@@ -28,13 +29,18 @@ public class VRShoot : MonoBehaviour {
         if((Input.GetMouseButtonDown(0) || (Input.GetButtonDown("Fire2"))) && Time.time > _nextShot)
         {
             _nextShot = Time.time + shotRate;
-            SoundSource.Play();
+            
             Shoot();
         }
+
 	}
 
     void Shoot()
     {
+        ammo -= 1;
+
+        SoundSource.Play();
+
         RaycastHit hit;
 
         flash.Play();
